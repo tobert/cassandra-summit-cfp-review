@@ -1,6 +1,5 @@
-ccfp
-====
+Cassandra Summit CFP Reviews
+============================
 
-A tiny CFP app built with Go & Cassandra, inspired by @obfuscurity's Judy.
-
+Built with Go & Cassandra, inspired by @obfuscurity's Judy.
 
