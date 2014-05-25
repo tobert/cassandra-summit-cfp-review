@@ -1,0 +1,21 @@
+{
+    "title":      "Disk Latency and Other Random Numbers",
+    "body":       "this is the abstract",
+    "authors":    {"atobey@datastax.com": "Al Tobey"},
+    "tags":       ["ssd", "disk", "storage"],
+    "attributes": {},
+    "comments":   {},
+    "scores_a":    {"al@datastax.com": 7},
+    "scores_b":    {"al@datastax.com": 7},
+    "scores_c":    {"al@datastax.com": 10},
+    "scores_d":    {},
+    "scores_e":    {},
+    "scores_f":    {},
+    "scores_g":    {},
+    "scores_names": {
+      "scores_a": "Skill Level",
+      "scores_b": "Abstract Quality",
+      "scores_c": "Relevance"
+    }
+}
+
