@@ -77,6 +77,8 @@ func (cs *CQLStore) New(r *http.Request, name string) (sess *sessions.Session, e
 		sess.Values["email"] = email
 	} else {
 		sess.Values["created"] = time.Now()
+		// TODO: figure out how to pass the email around
+		fmt.Printf("BUG: hard-coded email address, this field will be nonsense!")
 		sess.Values["email"] = "foobar@foobar.com" // BUG: hard coded
 	}
 
