@@ -76,7 +76,7 @@ func main() {
 
 			a.Id = gocql.TimeUUID()
 			a.Created = time.Now()
-			err = CreateAbstract(cass, a)
+			err = a.Save(cass)
 			if err != nil {
 				http.Error(w, fmt.Sprintf("persistence failed: %s", err), 500)
 			}

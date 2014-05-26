@@ -118,8 +118,7 @@ FROM abstracts WHERE id=?`, id)
 
 // Create a new abstract record in the DB. Only the base fields
 // are inserted in this call.
-func CreateAbstract(cass *gocql.Session, a Abstract) error {
-	fmt.Printf("INSERTING: %v\n", a)
+func (a *Abstract) Save(cass *gocql.Session) error {
 	return cass.Query(`
 INSERT INTO abstracts (
 	id, title, body, created, authors, tags, attributes, comments,
