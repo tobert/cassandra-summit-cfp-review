@@ -19,23 +19,39 @@
   <form id="login-form" method="POST">
       <input id="assertion-field" type="hidden" name="assertion" value="">
   </form>
-
   <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-    <div class="container">
+    <div class="container-fluid">
       <div class="navbar-header">
-        <a class="navbar-brand" href="#">CFP Review</a>
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#">2014 CFP Review</a>
       </div>
 
-      <div class="navbar-right">
-          <a href="#" id="login"><img src="img/persona_signin_blue.png" border="0" alt="Sign in with Persona"/></a>
-          <a href="#" id="logout">Logout <span id="username"></span></a>
+      <div class="navbar-collapse collapse">
+        <ul class="nav navbar-nav">
+          <li class="active"><a href="#" id="overview-link">Overview</a></li>
+          <li><a href="#" id="review-link">Review</a></li>
+          <li><a href="#" id="submit-link">Submit</a></li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <li id="login">
+             <a href="#"><img src="img/persona_signin_blue.png" border="0" alt="Sign in with Persona"/></a>
+          </li>
+          <li id="logout">
+             <a href="#">Logout <span id="username"></span></a>
+          </li>
+        </ul>
       </div>
     </div>
   </div>
 
   <div class="container-fluid" id="index-body">
-    <div class="row">
-      <p>oh, hai!</p>
+    <div class="row" id="content-panel">
+      <p>Ohai!</p>
     </div>
   </div>
 
@@ -50,5 +66,6 @@
 <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
 <script src="//login.persona.org/include.js"></script>
 <script src="js/persona.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
