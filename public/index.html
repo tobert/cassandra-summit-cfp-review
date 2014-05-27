@@ -19,6 +19,7 @@
   <form id="login-form" method="POST">
       <input id="assertion-field" type="hidden" name="assertion" value="">
   </form>
+
   <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
     <div class="container-fluid">
       <div class="navbar-header">
@@ -32,8 +33,8 @@
       </div>
 
       <div class="navbar-collapse collapse">
-        <ul class="nav navbar-nav">
-          <li class="active"><a href="#" id="overview-link">Overview</a></li>
+        <ul class="nav navbar-nav" id="action-menu">
+          <li><a href="#" id="overview-link">Overview</a></li>
           <li><a href="#" id="review-link">Review</a></li>
           <li><a href="#" id="submit-link">Submit</a></li>
         </ul>
@@ -64,6 +65,7 @@
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+<script src="js/d3.v3.min.js"></script>
 <script src="//login.persona.org/include.js"></script>
 <script src="js/persona.js"></script>
 <script src="js/app.js"></script>

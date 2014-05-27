@@ -16,9 +16,10 @@
  * requires: jQuery and login.persona.org/include.js
  */
 
+var userEmail = "";
+
 $( document ).ready(function() {
   navigator.id.watch({
-    //loggedInUser: 'bob@example.org',
     onlogin: function(assertion) {
       $.ajax({
         type: 'POST',
@@ -50,13 +51,16 @@ $( document ).ready(function() {
   });
 
   function loggedIn(email) {
+    userEmail = email;
     $('#login').removeClass('active');
     $('#logout').addClass('active');
+    $('#action-menu').addClass('active');
     $('#username').html("<span>" + email + "</span>");
   }
 
   function loggedOut() {
     $('#logout').removeClass('active');
+    $('#action-menu').removeClass('active');
     $('#login').addClass('active');
     $('#username').html(" ");
   }
@@ -70,6 +74,6 @@ $( document ).ready(function() {
   });
 
   $('#login').on('click', function (e) {
-    navigator.id.logout(); 
+    navigator.id.logout();
   });
 });
