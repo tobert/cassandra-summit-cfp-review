@@ -64,9 +64,9 @@ func (cs *CQLStore) New(r *http.Request, name string) (sess *sessions.Session, e
 	// load the cookie (if it exists)
 	c, err := r.Cookie(name)
 	if err == nil {
-		err = securecookie.DecodeMulti(name, c.Value, &sess.ID, cs.Codecs...)
+		err = securecookie.DecodeMulti(name, c.Value, &sess.Values, cs.Codecs...)
 		if err != nil {
-			log.Printf("Cookie decode failed: %s\n", err)
+			log.Printf("cqlstore: Cookie decode failed: %s\n", err)
 			return
 		}
 	}
@@ -101,7 +101,7 @@ func (cs *CQLStore) Save(r *http.Request, w http.ResponseWriter, sess *sessions.
 	// serialize the session for storage in cassandra
 	blob, err := securecookie.EncodeMulti(sess.Name(), sess.Values, cs.Codecs...)
 	if err != nil {
-		log.Printf("Failed to encode session for storage in Cassandra: %s\n", err)
+		log.Printf("cqlstore: Failed to encode session for storage in Cassandra: %s\n", err)
 		return
 	}
 
