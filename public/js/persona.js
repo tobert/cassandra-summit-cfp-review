@@ -27,7 +27,6 @@ $( document ).ready(function() {
         data: {assertion: assertion}
       }).done(function(data, status, xhr) {
           console.log("logged in successfully");
-          console.log("data", data);
           loggedIn(data["email"])
       }).fail(function(xhr, status, err) {
           console.log("Login failure: " + err);
@@ -62,15 +61,15 @@ $( document ).ready(function() {
     $('#username').html(" ");
   }
 
-  function login() {
+  $('#login').on('click', function (e) {
     navigator.id.request({
       siteName: 'Cassandra Summit 2014 CFP Review',
       returnTo: '/',
       oncancel: function() { alert('user refuses to share identity.'); }
     });
-  }
+  });
 
-  function logout() {
+  $('#login').on('click', function (e) {
     navigator.id.logout(); 
-  }
+  });
 });

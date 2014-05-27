@@ -4,7 +4,7 @@ html {
 }
 
 body {
-  margin-bottom: 30px;
+  margin-bottom: 50px;
 }
 
 #footer {
@@ -12,12 +12,6 @@ body {
   bottom: 0;
   width: 100%;
   height: 30px;
-}
-
-@media (min-width: 1200px) {
-  .container {
-    width: 970px;
-  }
 }
 
 #login, #logout {
