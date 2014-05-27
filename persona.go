@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 )
@@ -44,7 +45,10 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if auth.Status == "okay" {
 		// set up an auth session and save it to Cassandra
-		sess, _ := store.Get(r, "persona")
+		sess, err := store.Get(r, "persona")
+		if err != nil {
+			log.Printf("Error loading session: %s\n", err)
+		}
 		sess.Values["email"] = auth.Email
 		sess.Save(r, w)
 		jsonOut(w, r, auth)
@@ -54,7 +58,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("Empty logout handler.\n")
+	log.Printf("Empty logout handler.\n")
 }
 
 func verifyAssertion(assertion string) (auth AuthResp, err error) {
