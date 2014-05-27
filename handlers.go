@@ -33,6 +33,10 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
+	if !checkAuth(w, r) {
+		return
+	}
+
 	switch r.Method {
 	case "GET":
 		alist, err := ListAbstracts(cass)
@@ -64,6 +68,10 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func AbstractHandler(w http.ResponseWriter, r *http.Request) {
+	if !checkAuth(w, r) {
+		return
+	}
+
 	vars := mux.Vars(r)
 	id, err := gocql.ParseUUID(vars["id"])
 	if err != nil {
@@ -71,4 +79,23 @@ func AbstractHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	a, _ := GetAbstract(cass, id)
 	jsonOut(w, r, a)
+}
+
+// returns the email string if authenticated (via persona), it won't
+// be there at all if the user didn't authenticate
+func checkAuth(w http.ResponseWriter, r *http.Request) bool {
+	sess, err := store.Get(r, sessCookie)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to read cookie: %s\n", err), 400)
+		return false
+	}
+
+	if sess.Values["email"] != nil {
+		email := sess.Values["email"].(string)
+		if email != "" {
+			return true
+		}
+	}
+
+	return false
 }

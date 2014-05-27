@@ -45,7 +45,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if auth.Status == "okay" {
 		// set up an auth session and save it to Cassandra
-		sess, err := store.Get(r, "persona")
+		sess, err := store.Get(r, sessCookie)
 		if err != nil {
 			log.Printf("Error loading session: %s\n", err)
 		}

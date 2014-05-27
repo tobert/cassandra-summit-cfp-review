@@ -29,6 +29,7 @@ import (
 var cass *gocql.Session
 var store *CQLStore
 
+const sessCookie string = "cfp2014"
 const audience string = "localhost:8080"
 
 var privKey []byte = []byte("2213AA86-CEB4-48FA-A65B-4AC37687131E")
