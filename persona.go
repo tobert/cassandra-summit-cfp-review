@@ -21,6 +21,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -36,18 +37,31 @@ type AuthResp struct {
 	Reason   string `json:"reason"`
 }
 
-func (a *AuthResp) Authenticated() bool {
-	return a.Status == "okay"
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	auth, err := verifyAssertion(r.FormValue("assertion"))
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to check auth assertion: %s", err), 500)
+	}
+	if auth.Status == "okay" {
+		sess, _ := store.Get(r, "persona")
+		sess.Save(r, w)
+		jsonOut(w, r, auth)
+	} else {
+		http.Error(w, fmt.Sprintf("Authenticaiton failed: %s", err), 400)
+	}
 }
 
-func Authenticate(assertion string, audience string) (auth AuthResp, err error) {
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("Empty logout handler.\n")
+}
+
+func verifyAssertion(assertion string) (auth AuthResp, err error) {
 	params := url.Values{"assertion": {assertion}, "audience": {audience}}
 
 	resp, err := http.PostForm("https://verifier.login.persona.org/verify", params)
 	if err != nil {
 		return
 	}
-
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -56,9 +70,6 @@ func Authenticate(assertion string, audience string) (auth AuthResp, err error) 
 	}
 
 	err = json.Unmarshal(body, &auth)
-	if err != nil {
-		return
-	}
 
-	return auth, nil
+	return
 }

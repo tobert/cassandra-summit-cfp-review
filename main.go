@@ -27,6 +27,11 @@ import (
 )
 
 var cass *gocql.Session
+var store *CQLStore
+
+const audience string = "localhost:8080"
+
+var privKey []byte = []byte("2213AA86-CEB4-48FA-A65B-4AC37687131E")
 
 func main() {
 	// connect to Cassandra
@@ -41,11 +46,16 @@ func main() {
 	}
 	defer cass.Close()
 
+	store = NewCQLStore(cass, privKey)
+
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", RootHandler)
 	r.HandleFunc("/abstracts/", AbstractsHandler)
 	r.HandleFunc("/abstracts/{id:[-a-f0-9]+}", AbstractHandler)
+	r.HandleFunc("/login", LoginHandler)
+	r.HandleFunc("/logout", LogoutHandler)
+
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")))
 
 	http.Handle("/", r)

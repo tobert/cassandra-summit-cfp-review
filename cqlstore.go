@@ -20,6 +20,7 @@ package main
  */
 
 import (
+	"fmt"
 	"github.com/gocql/gocql"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
