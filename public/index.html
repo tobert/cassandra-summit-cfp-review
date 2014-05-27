@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <link rel="shortcut icon" href="favicon.ico">
+
+  <title>Cassandra Summit 2014 CFP Review</title>
+
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css">
+
+  <style>
+    html {
+      position: relative;
+      min-height: 100%;
+    }
+
+    body {
+      margin-bottom: 30px;
+    }
+
+    #footer {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 30px;
+    }
+
+    @media (min-width: 1200px) {
+      .container {
+        width: 970px;
+      }
+    }
+
+    #login, #logout {
+      color: #ffffff;
+      display: none;
+    }
+
+    #login.active, #logout.active {
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <form id="login-form" method="POST">
+      <input id="assertion-field" type="hidden" name="assertion" value="">
+  </form>
+
+  <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#">CFP Review</a>
+      </div>
+
+      <div class="navbar-right">
+          <a href="javascript:login();" id="login"><img src="img/persona_signin_blue.png" border="0" alt="Sign in with Persona"/></a>
+          <a href="javascript:logout();" id="logout">Logout <span id="username"></span></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container-fluid" id="index-body">
+    <div class="row">
+      <p>oh, hai!</p>
+    </div>
+  </div>
+
+<footer class="footer">
+  <hr style="padding: 1em;"/>
+  <div id="footer" class="container">
+    <span style="padding-left: 1em;">&copy; atobey@datastax.com 2014</span>
+    <a class="pull-right" style="padding-right: 1em;" href="https://github.com/tobert/tobert.github.io">Source Code</a>
+  </div>
+</footer>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+<script src="//login.persona.org/include.js"></script>
+<script>
+  navigator.id.watch({
+    //loggedInUser: 'bob@example.org',
+    onlogin: function(assertion) {
+      $.ajax({
+        type: 'POST',
+        url: '/login',
+        dataType: "json",
+        data: {assertion: assertion}
+      }).done(function(data, status, xhr) {
+          console.log("logged in successfully");
+          console.log("data", data);
+          loggedIn(data["email"])
+      }).fail(function(xhr, status, err) {
+          console.log("Login failure: " + err);
+          loggedOut();
+          navigator.id.logout();
+      });
+    },
+    onlogout: function() {
+      $.ajax({
+        type: 'POST',
+        dataType: "json",
+        url: '/logout'
+      }).done(function(res, status, xhr) {
+          console.log("logged out successfully", navigator);
+          loggedOut();
+      }).fail(function(xhr, status, err) {
+          console.log("Logout failure: " + err);
+          loggedOut();
+      });
+    }
+  });
+
+  function loggedIn(email) {
+    $('#login').removeClass('active');
+    $('#logout').addClass('active');
+    $('#username').html("<span>" + email + "</span>");
+  }
+
+  function loggedOut() {
+    $('#logout').removeClass('active');
+    $('#login').addClass('active');
+    $('#username').html(" ");
+  }
+
+  function login() {
+    navigator.id.request({
+      siteName: 'Cassandra Summit 2014 CFP Review',
+      returnTo: '/',
+      oncancel: function() { alert('user refuses to share identity.'); }
+    });
+  }
+
+  function logout() {
+    navigator.id.logout(); 
+  }
+</script>
+</body>
+</html>
