@@ -35,3 +35,11 @@ CREATE TABLE abstract_tag_index (
 	comments set<uuid>,
 	PRIMARY KEY(tag)
 );
+
+CREATE TABLE sessions (
+	id      uuid,
+	email   text,
+	data    blob,
+	created timestamp,
+	PRIMARY KEY(id)
+);
