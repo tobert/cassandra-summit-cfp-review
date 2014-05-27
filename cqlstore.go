@@ -121,12 +121,7 @@ func (cs *CQLStore) Save(r *http.Request, w http.ResponseWriter, sess *sessions.
 	}
 
 	// update the cookie
-	cdata, err := securecookie.EncodeMulti(sess.Name(), sess.ID, cs.Codecs...)
-	if err != nil {
-		log.Printf("Failed to encode session for the cookie: %s\n", err)
-		return
-	}
-	http.SetCookie(w, sessions.NewCookie(sess.Name(), cdata, sess.Options))
+	http.SetCookie(w, sessions.NewCookie(sess.Name(), blob, sess.Options))
 
 	return nil
 }
