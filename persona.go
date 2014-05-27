@@ -43,7 +43,9 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Failed to check auth assertion: %s", err), 500)
 	}
 	if auth.Status == "okay" {
+		// set up an auth session and save it to Cassandra
 		sess, _ := store.Get(r, "persona")
+		sess.Values["email"] = auth.Email
 		sess.Save(r, w)
 		jsonOut(w, r, auth)
 	} else {

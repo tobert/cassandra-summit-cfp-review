@@ -37,9 +37,9 @@ CREATE TABLE abstract_tag_index (
 );
 
 CREATE TABLE sessions (
-	id      uuid,
-	email   text,
-	data    blob,
-	created timestamp,
+	id       uuid,
+	data     blob,
+	created  timestamp,
+	modified timestamp,
 	PRIMARY KEY(id)
 );

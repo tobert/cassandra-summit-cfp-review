@@ -20,10 +20,12 @@ package main
  */
 
 import (
+	"encoding/gob"
 	"fmt"
 	"github.com/gocql/gocql"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
+	"log"
 	"net/http"
 	"time"
 )
@@ -32,6 +34,10 @@ type CQLStore struct {
 	Cass    *gocql.Session       // connected gocql cassandra session
 	Codecs  []securecookie.Codec // session codecs
 	Options *sessions.Options    // default configuration
+}
+
+func init() {
+	gob.Register(time.Now())
 }
 
 func NewCQLStore(cass *gocql.Session, keyPairs ...[]byte) *CQLStore {
@@ -55,32 +61,25 @@ func (cs *CQLStore) New(r *http.Request, name string) (sess *sessions.Session, e
 	opts := *cs.Options // make a copy
 	sess.Options = &opts
 
-	// load the existing cookie (if it exists)
+	// load the cookie (if it exists)
 	c, err := r.Cookie(name)
-	if err != nil {
-		return
-	}
-
-	err = securecookie.DecodeMulti(name, c.Value, &sess.ID, cs.Codecs...)
-	if err != nil {
-		return
+	if err == nil {
+		err = securecookie.DecodeMulti(name, c.Value, &sess.ID, cs.Codecs...)
+		if err != nil {
+			log.Printf("Cookie decode failed: %s\n", err)
+			return
+		}
 	}
 
 	var data []byte
-	var email Email
-	var created time.Time
-	query := `SELECT data, email, created FROM sessions WHERE id=?`
+	var created, modified time.Time
+	query := `SELECT data, created, modified FROM sessions WHERE id=?`
 	iq := cs.Cass.Query(query, sess.ID).Iter()
-	ok := iq.Scan(&data, &email, &created)
+	ok := iq.Scan(&data, &created, &modified)
 	if ok {
 		sess.IsNew = false
 		sess.Values["created"] = created
-		sess.Values["email"] = email
-	} else {
-		sess.Values["created"] = time.Now()
-		// TODO: figure out how to pass the email around
-		fmt.Printf("BUG: hard-coded email address, this field will be nonsense!")
-		sess.Values["email"] = "foobar@foobar.com" // BUG: hard coded
+		sess.Values["modified"] = modified
 	}
 
 	return
@@ -102,25 +101,29 @@ func (cs *CQLStore) Save(r *http.Request, w http.ResponseWriter, sess *sessions.
 	// serialize the session for storage in cassandra
 	blob, err := securecookie.EncodeMulti(sess.Name(), sess.Values, cs.Codecs...)
 	if err != nil {
+		log.Printf("Failed to encode session for storage in Cassandra: %s\n", err)
 		return
 	}
 
-	var created time.Time
+	var created, modified time.Time
 	if sess.IsNew {
 		created = now
 	} else {
 		created = sess.Values["created"].(time.Time)
 	}
+	modified = now
 
-	query := `INSERT INTO sessions (id, data, email, created) VALUES (?, ?, ?, ?)`
-	err = cs.Cass.Query(query, sess.ID, blob, created).Exec()
+	query := `INSERT INTO sessions (id, data, created, modified) VALUES (?, ?, ?, ?)`
+	err = cs.Cass.Query(query, sess.ID, blob, created, modified).Exec()
 	if err != nil {
+		fmt.Printf("Failed to save session to Cassandra: %s\n", err)
 		return
 	}
 
 	// update the cookie
 	cdata, err := securecookie.EncodeMulti(sess.Name(), sess.ID, cs.Codecs...)
 	if err != nil {
+		log.Printf("Failed to encode session for the cookie: %s\n", err)
 		return
 	}
 	http.SetCookie(w, sessions.NewCookie(sess.Name(), cdata, sess.Options))
