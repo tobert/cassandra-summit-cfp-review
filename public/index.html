@@ -16,45 +16,116 @@
 </head>
 
 <body>
-  <form id="login-form" method="POST">
-      <input id="assertion-field" type="hidden" name="assertion" value="">
+<form id="login-form" method="POST">
+  <input id="assertion-field" type="hidden" name="assertion" value="">
+</form>
+
+<div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">2014 CFP Review</a>
+    </div>
+
+    <div class="navbar-collapse collapse">
+      <ul class="nav navbar-nav" id="action-menu">
+        <li><a href="#" id="overview-link">Overview</a></li>
+        <li><a href="#" id="review-link">Review</a></li>
+        <li><a href="#" id="submit-link">Submit</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li id="login">
+           <a href="#"><img src="img/persona_signin_blue.png" border="0" alt="Sign in with Persona"/></a>
+        </li>
+        <li id="logout">
+           <a href="#">Logout <span id="username"></span></a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="container" id="index-body">
+<div class="row" id="overview">
+  <table class="table table-striped">
+    <thead>
+      <tr><th>Author</th><th>Title</th><th>Skill Level</th><th>Quality</th><th>Relevance</th></tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+</div>
+
+<div class="row" id="review">
+</div>
+
+<div id="submit">
+  <form class="form-horizontal" role="form" action="PUT">
+  <fieldset>
+  <legend>Submit Abstract</legend>
+  <div class="control-group">
+    <label class="control-label" for="author">Name</label>
+    <div class="controls">
+      <input id="author" name="author" type="text" placeholder="First Last" class="input-xlarge" required="">
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="email">Email</label>
+    <div class="controls">
+      <input id="email" name="email" type="text" placeholder="Email" class="input-xlarge" required="">
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="company">Company Name</label>
+    <div class="controls">
+      <input id="company" name="company" type="text" placeholder="Company" class="input-xlarge" required="">
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="jobtitle">Job Title</label>
+    <div class="controls">
+      <input id="jobtitle" name="jobtitle" type="text" placeholder="Job Title" class="input-xlarge">
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="bio">Bio</label>
+    <div class="controls">
+      <textarea id="bio" name="bio"></textarea>
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="Link to Picture">Link to Picture</label>
+    <div class="controls">
+      <input id="Link to Picture" name="Link to Picture" type="text" placeholder="http://example.com/me.jpg" class="input-xlarge">
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="title">Title</label>
+    <div class="controls">
+      <input id="title" name="title" type="text" placeholder="Cassandra is Awesome" class="input-xlarge" required="">
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="abstract">Abstract</label>
+    <div class="controls">
+      <textarea id="abstract" name="abstract"></textarea>
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="audience">Target Audience</label>
+    <div class="controls">
+      <input id="audience" name="audience" type="text" placeholder="engineers, software developers, architects, execs" class="input-xlarge">
+    </div>
+  </div>
+  </fieldset>
   </form>
-
-  <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-    <div class="container-fluid">
-      <div class="navbar-header">
-        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-          <span class="sr-only">Toggle navigation</span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-        </button>
-        <a class="navbar-brand" href="#">2014 CFP Review</a>
-      </div>
-
-      <div class="navbar-collapse collapse">
-        <ul class="nav navbar-nav" id="action-menu">
-          <li><a href="#" id="overview-link">Overview</a></li>
-          <li><a href="#" id="review-link">Review</a></li>
-          <li><a href="#" id="submit-link">Submit</a></li>
-        </ul>
-        <ul class="nav navbar-nav navbar-right">
-          <li id="login">
-             <a href="#"><img src="img/persona_signin_blue.png" border="0" alt="Sign in with Persona"/></a>
-          </li>
-          <li id="logout">
-             <a href="#">Logout <span id="username"></span></a>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <div class="container-fluid" id="index-body">
-    <div class="row" id="content-panel">
-      <p>Ohai!</p>
-    </div>
-  </div>
+</div>
+</div>
 
 <footer class="footer">
   <div id="footer" class="container">
