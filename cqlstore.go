@@ -20,8 +20,9 @@ package main
  */
 
 import (
+	"bytes"
 	"encoding/gob"
-	"fmt"
+	"errors"
 	"github.com/gocql/gocql"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
@@ -61,66 +62,47 @@ func (cs *CQLStore) New(r *http.Request, name string) (sess *sessions.Session, e
 	opts := *cs.Options // make a copy
 	sess.Options = &opts
 
-	// load the cookie (if it exists)
+	// load the session ID from the cookie (if it exists)
 	c, err := r.Cookie(name)
 	if err == nil {
-		err = securecookie.DecodeMulti(name, c.Value, &sess.Values, cs.Codecs...)
+		err = securecookie.DecodeMulti(name, c.Value, &sess.ID, cs.Codecs...)
+		log.Printf("Got session ID from cookie: '%s'\n", sess.ID)
 		if err != nil {
 			log.Printf("cqlstore: Cookie decode failed: %s\n", err)
 			return
 		}
+
+		if cs.load(sess) == nil {
+			sess.IsNew = false
+		}
+		return
+	} else {
+		log.Printf("No cookie found with name '%s'.\n", name)
 	}
 
-	var data []byte
-	var created, modified time.Time
-	query := `SELECT data, created, modified FROM sessions WHERE id=?`
-	iq := cs.Cass.Query(query, sess.ID).Iter()
-	ok := iq.Scan(&data, &created, &modified)
-	if ok {
-		sess.IsNew = false
-		sess.Values["created"] = created
-		sess.Values["modified"] = modified
+	// no cookie or ID found, generate an ID for a new session
+	uuid, err := gocql.RandomUUID()
+	if err != nil {
+		log.Printf("cqlstore: failed to generate a new UUID: %s\n", err)
+		return
 	}
+	sess.ID = uuid.String()
 
 	return
 }
 
 func (cs *CQLStore) Save(r *http.Request, w http.ResponseWriter, sess *sessions.Session) (err error) {
-	now := time.Now()
-
-	// generate a uuid if there isn't an id already
-	if sess.ID == "" {
-		var id gocql.UUID
-		id, err = gocql.RandomUUID()
-		if err != nil {
-			return
-		}
-		sess.ID = id.String()
-	}
-
-	// serialize the session for storage in cassandra
-	blob, err := securecookie.EncodeMulti(sess.Name(), sess.Values, cs.Codecs...)
+	err = cs.save(sess)
 	if err != nil {
-		log.Printf("cqlstore: Failed to encode session for storage in Cassandra: %s\n", err)
+		log.Printf("cqlstore: Failed to save session to Cassandra: %s\n", err)
 		return
 	}
 
-	var created, modified time.Time
-	if sess.IsNew {
-		created = now
-	} else {
-		created = sess.Values["created"].(time.Time)
-	}
-	modified = now
-
-	query := `INSERT INTO sessions (id, data, created, modified) VALUES (?, ?, ?, ?)`
-	err = cs.Cass.Query(query, sess.ID, blob, created, modified).Exec()
+	blob, err := securecookie.EncodeMulti(sess.Name(), sess.ID, cs.Codecs...)
 	if err != nil {
-		fmt.Printf("Failed to save session to Cassandra: %s\n", err)
-		return
+		log.Printf("cqlstore: Failed to encode session: %s\n", err)
+		return err
 	}
-
-	// update the cookie
 	http.SetCookie(w, sessions.NewCookie(sess.Name(), blob, sess.Options))
 
 	return nil
@@ -134,5 +116,42 @@ func (cs *CQLStore) Delete(r *http.Request, w http.ResponseWriter, sess *session
 
 	// delete the session from the DB
 	err = cs.Cass.Query(`DELETE FROM sessions WHERE id=?`, sess.ID).Exec()
+	return
+}
+
+// load session data from Cassandra
+func (cs *CQLStore) load(sess *sessions.Session) (err error) {
+	var data []byte
+	var created, modified time.Time
+	query := `SELECT data, created, modified FROM sessions WHERE id=?`
+	iq := cs.Cass.Query(query, sess.ID).Iter()
+	ok := iq.Scan(&data, &created, &modified)
+	if ok {
+		// expose the created/modified times through the session values
+		sess.Values["created"] = created
+		sess.Values["modified"] = modified
+		sess.IsNew = false
+		return
+	} else {
+		log.Printf("cqlstore: CQL query for session ID '%s' failed.\n", sess.ID)
+		return errors.New("CQL query failed.")
+	}
+	return
+}
+
+func (cs *CQLStore) save(sess *sessions.Session) (err error) {
+	// save to Cassandra using gobs without encryption
+	var vals bytes.Buffer
+	enc := gob.NewEncoder(&vals)
+	enc.Encode(sess.Values)
+
+	now := time.Now()
+	if sess.IsNew {
+		query := `INSERT INTO sessions (id, data, created, modified) VALUES (?, ?, ?, ?)`
+		err = cs.Cass.Query(query, sess.ID, vals.Bytes(), now, now).Exec()
+	} else {
+		query := `UPDATE sessions SET data=?, modified=? WHERE id=?`
+		err = cs.Cass.Query(query, vals.Bytes(), now, sess.ID).Exec()
+	}
 	return
 }
