@@ -15,6 +15,9 @@ the userEmail field is populated asyncronously after the login is processed. Thi
 when the user tries to do something too quickly. Need to add some way to block actions until it's ready or
 come up with a better way to keep the email address state around.
 
+Use appropriate HTTP response codes for each error. Most are either 500 or 400 right now, which is
+not accurate.
+
 License
 =======
 
