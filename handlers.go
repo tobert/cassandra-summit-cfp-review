@@ -24,11 +24,15 @@ import (
 	"fmt"
 	"github.com/gocql/gocql"
 	"github.com/gorilla/mux"
+	"log"
 	"net/http"
 	"time"
 )
 
 func RootHandler(w http.ResponseWriter, r *http.Request) {
+	// check for auth but ignore the result: this will initialize
+	// the cookie on page load
+	checkAuth(w, r)
 	http.ServeFile(w, r, "./public/index.html")
 }
 
@@ -49,7 +53,6 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 		dec := json.NewDecoder(r.Body)
 		err := dec.Decode(&a)
 
-		// TODO: better error code
 		if err != nil {
 			http.Error(w, fmt.Sprintf("invalid json data: %s", err), 500)
 		}
@@ -84,14 +87,22 @@ func AbstractHandler(w http.ResponseWriter, r *http.Request) {
 // returns the email string if authenticated (via persona), it won't
 // be there at all if the user didn't authenticate
 func checkAuth(w http.ResponseWriter, r *http.Request) bool {
+	log.Println("checkAuth()")
 	sess, err := store.Get(r, sessCookie)
+	log.Printf("Session ID: '%s'\n", sess.ID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to read cookie: %s\n", err), 400)
 		return false
 	}
 
+	if sess.IsNew {
+		sess.Save(r, w)
+	}
+
+	log.Printf("sess.Values[email]: '%s'\n", sess.Values["email"])
 	if sess.Values["email"] != nil {
 		email := sess.Values["email"].(string)
+		log.Printf("Email is '%s'\n", email)
 		if email != "" {
 			return true
 		}
