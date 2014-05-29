@@ -17,6 +17,7 @@
  */
 
 var userEmail = "";
+var authDone = false;
 
 $( document ).ready(function() {
   navigator.id.watch({
@@ -29,11 +30,13 @@ $( document ).ready(function() {
       }).done(function(data, status, xhr) {
           console.log("logged in successfully");
           loggedIn(data["email"])
+		  ccfp.run();
       }).fail(function(xhr, status, err) {
           console.log("Login failure: " + err);
           loggedOut();
           navigator.id.logout();
-      });
+		  ccfp.disable();
+	  });
     },
     onlogout: function() {
       $.ajax({
@@ -43,10 +46,12 @@ $( document ).ready(function() {
       }).done(function(res, status, xhr) {
           console.log("logged out successfully", navigator);
           loggedOut();
+		  ccfp.disable();
       }).fail(function(xhr, status, err) {
           console.log("Logout failure: " + err);
           loggedOut();
-      });
+		  ccfp.disable();
+	  });
     }
   });
 
@@ -73,7 +78,8 @@ $( document ).ready(function() {
     });
   });
 
-  $('#login').on('click', function (e) {
+  $('#logout').on('click', function (e) {
+    console.log("Logging out.");
     navigator.id.logout();
   });
 });
