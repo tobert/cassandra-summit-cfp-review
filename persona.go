@@ -48,7 +48,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		// set up an auth session and save it to Cassandra
 		sess, err := store.Get(r, sessCookie)
 		if err != nil {
-			log.Printf("Error loading session: %s\n", err)
+			log.Printf("Error loading session for email '%s': %s\n", auth.Email, err)
 		}
 		sess.Values["email"] = auth.Email
 		sess.Save(r, w)
@@ -60,7 +60,14 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Empty logout handler.\n")
+	sess, err := store.Get(r, sessCookie)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to read cookie: %s\n", err), 500)
+	}
+	err = store.Delete(r, w, sess)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to delete session: %s\n", err), 500)
+	}
 }
 
 func verifyAssertion(assertion string) (auth AuthResp, err error) {

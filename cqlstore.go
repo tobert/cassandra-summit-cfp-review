@@ -17,11 +17,11 @@ package main
  *
  * cqlstore.go: a quick & dirty Cassandra CQL backend for Gorilla sessions
  *
+ * This implementation is specific to this application.
+ *
  */
 
 import (
-	"bytes"
-	"encoding/gob"
 	"errors"
 	"github.com/gocql/gocql"
 	"github.com/gorilla/securecookie"
@@ -35,10 +35,6 @@ type CQLStore struct {
 	Cass    *gocql.Session       // connected gocql cassandra session
 	Codecs  []securecookie.Codec // session codecs
 	Options *sessions.Options    // default configuration
-}
-
-func init() {
-	gob.Register(time.Now())
 }
 
 func NewCQLStore(cass *gocql.Session, keyPairs ...[]byte) *CQLStore {
@@ -61,32 +57,38 @@ func (cs *CQLStore) New(r *http.Request, name string) (sess *sessions.Session, e
 	sess.IsNew = true
 	opts := *cs.Options // make a copy
 	sess.Options = &opts
+	sess.Values["email"] = "" // important: this must always be a string or panics ensue
 
 	// load the session ID from the cookie (if it exists)
 	c, err := r.Cookie(name)
 	if err == nil {
 		err = securecookie.DecodeMulti(name, c.Value, &sess.ID, cs.Codecs...)
-		log.Printf("Got session ID from cookie: '%s'\n", sess.ID)
 		if err != nil {
 			log.Printf("cqlstore: Cookie decode failed: %s\n", err)
 			return
 		}
 
 		if cs.load(sess) == nil {
-			sess.IsNew = false
+			log.Printf("Got a valid session ID from cookie: '%s'\n", sess.ID)
+			sess.IsNew = false // existing session OK
+		} else {
+			log.Printf("Invalid session ID from cookie: '%s'\n", sess.ID)
+			sess.ID = "" // invalid session ID, clear it
 		}
-		return
 	} else {
 		log.Printf("No cookie found with name '%s'.\n", name)
 	}
 
 	// no cookie or ID found, generate an ID for a new session
-	uuid, err := gocql.RandomUUID()
-	if err != nil {
-		log.Printf("cqlstore: failed to generate a new UUID: %s\n", err)
-		return
+	if sess.ID == "" {
+		var uuid gocql.UUID
+		uuid, err = gocql.RandomUUID()
+		if err != nil {
+			log.Printf("cqlstore: failed to generate a new UUID: %s\n", err)
+			return
+		}
+		sess.ID = uuid.String()
 	}
-	sess.ID = uuid.String()
 
 	return
 }
@@ -121,15 +123,16 @@ func (cs *CQLStore) Delete(r *http.Request, w http.ResponseWriter, sess *session
 
 // load session data from Cassandra
 func (cs *CQLStore) load(sess *sessions.Session) (err error) {
-	var data []byte
+	var email string
 	var created, modified time.Time
-	query := `SELECT data, created, modified FROM sessions WHERE id=?`
+	query := `SELECT email, created, modified FROM sessions WHERE id=?`
 	iq := cs.Cass.Query(query, sess.ID).Iter()
-	ok := iq.Scan(&data, &created, &modified)
+	ok := iq.Scan(&email, &created, &modified)
 	if ok {
 		// expose the created/modified times through the session values
 		sess.Values["created"] = created
 		sess.Values["modified"] = modified
+		sess.Values["email"] = email
 		sess.IsNew = false
 		return
 	} else {
@@ -140,18 +143,15 @@ func (cs *CQLStore) load(sess *sessions.Session) (err error) {
 }
 
 func (cs *CQLStore) save(sess *sessions.Session) (err error) {
-	// save to Cassandra using gobs without encryption
-	var vals bytes.Buffer
-	enc := gob.NewEncoder(&vals)
-	enc.Encode(sess.Values)
-
 	now := time.Now()
+	email := sess.Values["email"].(string)
+
 	if sess.IsNew {
-		query := `INSERT INTO sessions (id, data, created, modified) VALUES (?, ?, ?, ?)`
-		err = cs.Cass.Query(query, sess.ID, vals.Bytes(), now, now).Exec()
+		query := `INSERT INTO sessions (id, email, created, modified) VALUES (?, ?, ?, ?)`
+		err = cs.Cass.Query(query, sess.ID, email, now, now).Exec()
 	} else {
-		query := `UPDATE sessions SET data=?, modified=? WHERE id=?`
-		err = cs.Cass.Query(query, vals.Bytes(), now, sess.ID).Exec()
+		query := `UPDATE sessions SET email=?, modified=? WHERE id=?`
+		err = cs.Cass.Query(query, email, now, sess.ID).Exec()
 	}
 	return
 }

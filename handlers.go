@@ -96,6 +96,7 @@ func checkAuth(w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	if sess.IsNew {
+		log.Printf("Saving session ID '%s' to Cassandra.\n", sess.ID)
 		sess.Save(r, w)
 	}
 
