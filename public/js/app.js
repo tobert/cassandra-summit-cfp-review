@@ -57,12 +57,27 @@ ccfp.computeStats = function (data) {
 
     // total all of the score fields across reviewers
     ccfp.ScoresFields.forEach(function (field) {
-      curr[field] = 0;
-      for (key in a[field]) {
-        if (a[field].hasOwnProperty(key)) {
-          curr[field] += a[field][key];
+      // track total & count to compute average later
+      var total_field = field + "-total";
+      var count_field = field + "-count";
+      curr[total_field] = 0;
+      curr[count_field] = 0;
+
+      for (key in a[field]) { // abstract/scores_a
+        if (a[field].hasOwnProperty(key)) { // abstract/scores_a/email
+          curr[count_field]++;
+          curr[total_field] += a[field][key];
+          curr[field] = a[field][key]; // current user's entry
         }
       }
+    });
+
+    // compute averages
+    ccfp.ScoresFields.forEach(function (field) {
+      var total_field = field + "-total";
+      var count_field = field + "-count";
+      var avg_field = field + "-avg";
+      curr[avg_field] = curr[total_field] / curr[count_field];
     });
 
     absStats.push(curr);
@@ -95,17 +110,23 @@ ccfp.renderOverview = function () {
     // fill in the fields for each abstract
     var td = tr.selectAll("td")
       .data(function (d) {
-        return [d["authors"], d["title"], d["scores_a"], d["scores_b"], d["scores_c"]];
+        return [
+          d["authors"], d["title"],
+          d["scores_a"], d["scores_b"], d["scores_c"],
+          d["scores_a-avg"], d["scores_b-avg"], d["scores_c-avg"]
+       ];
       })
       .enter()
       .append("td")
       .text(function(d) { return d; });
-
-    // create a modal for each entry for entering scores
-    ccfp.createScoringModals(data);
   }).fail(function(xhr, status, err) {
     console.log("XHR failed: " + status);
   });
+};
+
+ccfp.deleteOverview = function () {
+    console.log("gonna remove all rows from overview");
+    d3.select("#overview-tbody").selectAll("tr").remove();
 };
 
 ccfp.createScoringModals = function (data) {
@@ -176,7 +197,7 @@ ccfp.createScoringModals = function (data) {
            .attr("data-slider-step", 1) .attr("data-slider-value", value);
 
       var s = $("#" + domid).slider().on('slideStop', function() {
-        ccfp.updateScores(id, sliders);
+        ccfp.updateScores(id, sliders, divId);
       }).data('slider');
       // well this is weird ... it's best to update all scores at once
       // in a single ajax call so the sliders themselves, the cell containing
@@ -191,7 +212,7 @@ ccfp.createScoringModals = function (data) {
   });
 };
 
-ccfp.updateScores = function(id, sliders) {
+ccfp.updateScores = function(id, sliders, divId) {
   var su = [];
   sliders.forEach(function (s) {
     var score = s['slider'].getValue();
@@ -207,6 +228,12 @@ ccfp.updateScores = function(id, sliders) {
     dataType: "json"
   }).done(function(data, status, xhr) {
     console.log(data);
+    // TODO: replace this with close/cancel buttons on the modal!
+    // reload the overview when the modal closes
+    $("#" + divId).on('hidden.bs.modal', function () {
+      ccfp.deleteOverview();
+      ccfp.renderOverview();
+    });
   });
 };
 
@@ -218,7 +245,17 @@ ccfp.newAbstractForm = function () {
 // server, so rather than doing setup with $(document).ready, put
 // that code in run() and let the persona setup call it.
 ccfp.run = function () {
-  ccfp.renderOverview();
+  // create a modal for each entry for entering scores
+  $.ajax({
+    url: '/abstracts/',
+    dataType: "json"
+  }).done(function(data, status, xhr) {
+    ccfp.createScoringModals(data);
+    // render the overview after the modals are ready
+    ccfp.renderOverview();
+  }).fail(function(xhr, status, err) {
+    console.log("XHR failed: " + status);
+  });
 
   $('#new-abstract-link').on('click', function (e) {
     ccfp.newAbstractForm();
