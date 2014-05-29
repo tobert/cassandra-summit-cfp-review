@@ -3,7 +3,13 @@
     "body":       "this is the abstract",
     "authors":    {"atobey@datastax.com": "Al Tobey"},
     "tags":       ["ssd", "disk", "storage"],
-    "attributes": {},
+    "attributes": {
+		"company": "Datastax",
+		"jobtitle": "Open Source Mechanic",
+		"bio": "Al just this guy, you know...",
+		"picture_link": "http://tobert.org/images/al.jpg",
+		"audience": "architects, operations, developers"
+	},
     "comments":   {},
     "scores_a":    {"al@datastax.com": 7},
     "scores_b":    {"al@datastax.com": 7},
