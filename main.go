@@ -54,6 +54,7 @@ func main() {
 	r.HandleFunc("/", RootHandler)
 	r.HandleFunc("/abstracts/", AbstractsHandler)
 	r.HandleFunc("/abstracts/{id:[-a-f0-9]+}", AbstractHandler)
+	r.HandleFunc("/updatescores", ScoreUpdateHandler)
 	r.HandleFunc("/login", LoginHandler)
 	r.HandleFunc("/logout", LogoutHandler)
 

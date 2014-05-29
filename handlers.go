@@ -84,6 +84,27 @@ func AbstractHandler(w http.ResponseWriter, r *http.Request) {
 	jsonOut(w, r, a)
 }
 
+func ScoreUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	if !checkAuth(w, r) {
+		return
+	}
+	scores := make(ScoreUpdates, 7)
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(&scores)
+	if err != nil {
+		log.Printf("invalid score update json: %s\n", err)
+		http.Error(w, fmt.Sprintf("invalid score update json: %s", err), 500)
+	}
+
+	err = scores.Save(cass)
+	if err != nil {
+		log.Printf("score update failed: %s\n", err)
+		http.Error(w, fmt.Sprintf("score update failed: %s", err), 500)
+	}
+
+	jsonOut(w, r, scores)
+}
+
 // returns the email string if authenticated (via persona), it won't
 // be there at all if the user didn't authenticate
 func checkAuth(w http.ResponseWriter, r *http.Request) bool {

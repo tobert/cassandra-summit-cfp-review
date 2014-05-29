@@ -70,6 +70,17 @@ type Abstract struct {
 
 type Abstracts []Abstract
 
+// used to send a single score update (from UI sliders)
+// { "id": "deadbeef-...", "slot": "scores_a", "email": "atobey@datastax.com", "score": 100 }
+type ScoreUpdate struct {
+	Id    gocql.UUID `json:"id"`
+	Slot  string     `json:"slot"`
+	Email Email      `json:"email"`
+	Score Score      `json:"score"`
+}
+
+type ScoreUpdates []ScoreUpdate
+
 func ListAbstracts(cass *gocql.Session) (Abstracts, error) {
 	alist := make(Abstracts, 0)
 
@@ -134,29 +145,25 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	).Exec()
 }
 
-func SetScore(cass *gocql.Session, id gocql.UUID, score_slot string, email Email, score Score) error {
+func (su *ScoreUpdate) Save(cass *gocql.Session) error {
 	var query string // for untaint
 
-	switch score_slot {
+	switch su.Slot {
 	case "scores_a", "scores_b", "scores_c", "scores_d", "scores_e", "scores_f", "scores_g":
-		query = fmt.Sprintf("UPDATE abstracts SET %s[?] = ? WHERE id=?", score_slot)
+		query = fmt.Sprintf("UPDATE abstracts SET %s[?] = ? WHERE id=?", su.Slot)
 	default:
 		return errors.New("Invalid score slot in input.")
 	}
 
-	return cass.Query(query, email, score, id).Exec()
+	return cass.Query(query, su.Email, su.Score, su.Id).Exec()
 }
 
-func SetScores(cass *gocql.Session, id gocql.UUID, score_slot string, scores Scores) error {
-	if len(scores) == 0 {
-		return nil
-	}
-
-	for email, score := range scores {
-		err := SetScore(cass, id, score_slot, email, score)
+func (scores ScoreUpdates) Save(cass *gocql.Session) (err error) {
+	for _, su := range scores {
+		err = su.Save(cass)
 		if err != nil {
-			return err
+			break
 		}
 	}
-	return nil
+	return
 }
