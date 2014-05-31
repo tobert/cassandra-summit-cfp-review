@@ -15,7 +15,6 @@
  *
  * requires: jQuery and D3
  */
-
 var ccfp = ccfp || {};
 
 ccfp.scores_fields = ["scores_a", "scores_b", "scores_c", "scores_d", "scores_e", "scores_f", "scores_g"];
@@ -28,14 +27,14 @@ ccfp.table_fields = [
 ];
 
 // flatten the authors map to a comma-separated list
-ccfp.formatAuthors = function(item) {
-    var authors = [];
-    for (key in item["authors"]) {
-      if (item["authors"].hasOwnProperty(key)) {
-        authors.push(item["authors"][key]);
-      }
+ccfp.formatAuthors = function (item) {
+  var authors = [];
+  for (key in item["authors"]) {
+    if (item["authors"].hasOwnProperty(key)) {
+      authors.push(item["authors"][key]);
     }
-    return authors.join(", ");
+  }
+  return authors.join(", ");
 }
 
 // goes over the raw abstract data and gets some stats useful for displaying
@@ -52,10 +51,12 @@ ccfp.computeStats = function (data) {
 
     // make sure all table fields are defined so D3 can set up
     // the rows properly
-    ccfp.table_fields.map(function (f) { curr[f] = null; });
+    ccfp.table_fields.map(function (f) {
+      curr[f] = null;
+    });
 
     // copy over most fields as-is
-    ["id", "title", "attributes", "body", "tags", "comments", "scores_names"].forEach(function(f) {
+    ["id", "title", "attributes", "body", "tags", "comments", "scores_names"].forEach(function (f) {
       curr[f] = a[f];
     });
 
@@ -109,58 +110,82 @@ ccfp.renderOverview = function () {
   $.ajax({
     url: '/abstracts/',
     dataType: "json"
-  }).done(function(data, status, xhr) {
-    stats = ccfp.computeStats(data);
-    // create a row for each abstract
-    var tr = d3.select("#overview-tbody")
-      .selectAll("tr")
-      .data(stats.abstracts, function (d) { return d["id"]; })
-      .enter()
-      .append("tr");
+  })
+    .done(function (data, status, xhr) {
+      stats = ccfp.computeStats(data);
+      // create a row for each abstract
+      var tr = d3.select("#overview-tbody")
+        .selectAll("tr")
+        .data(stats.abstracts, function (d) {
+          return d["id"];
+        })
+        .enter()
+        .append("tr");
 
-    // fill in the fields for each abstract
-    tr.selectAll("td")
-      .data(function (d) {
-         return ccfp.table_fields.map(function (f) { return [d[f], d, f]; });
-      })
-      .enter()
-      .append("td")
-      .attr("data-field", function (d) { return d[2]; })
-      .attr("data-target", function(d) { return "#abstract-" + d[1]["id"] + "-modal"; })
-      .attr("data-id", function(d) { return d[1]["id"]; })
-      .attr("data-toggle", "modal")
-      .html(function (d) {
-         if (d[2] == "score-link") {
-           return '<a href="#">score</a>';
-         }
-         return d[0];
-      });
+      // fill in the fields for each abstract
+      tr.selectAll("td")
+        .data(function (d) {
+          return ccfp.table_fields.map(function (f) {
+            return [d[f], d, f];
+          });
+        })
+        .enter()
+        .append("td")
+        .attr("data-field", function (d) {
+          return d[2];
+        })
+        .attr("data-target", function (d) {
+          return "#abstract-" + d[1]["id"] + "-modal";
+        })
+        .attr("data-id", function (d) {
+          return d[1]["id"];
+        })
+        .attr("data-toggle", "modal")
+        .html(function (d) {
+          if (d[2] == "score-link") {
+            return '<a href="#">score</a>';
+          }
+          return d[0];
+        });
 
-    // change the edit link to open the editing modal using plain onclick
-    // where it's more straightforward to pass the id over
-    tr.selectAll("td").select(function (d) {
-      if (d[2] == "edit-link") {
-        return this;
-      }
-      return null;
+      // change the edit link to open the editing modal using plain onclick
+      // where it's more straightforward to pass the id over
+      tr.selectAll("td")
+        .select(function (d) {
+          if (d[2] == "edit-link") {
+            return this;
+          }
+          return null;
+        })
+        .attr("data-target", null)
+        .attr("data-toggle", null)
+        .on('click', function (e) {
+          var id = $(this)
+            .data('id');
+          ccfp.setupEditForm(id);
+        })
+        .append("a")
+        .attr("href", "#")
+        .text("edit");
     })
-    .attr("data-target", null)
-    .attr("data-toggle", null)
-    .on('click', function (e) {
-      var id = $(this).data('id');
-      ccfp.setupEditForm(id);
-    })
-    .append("a").attr("href", "#").text("edit");
-  }).fail(function(xhr, status, err) {
-    console.log("XHR failed: " + status);
-  });
+    .fail(function (xhr, status, err) {
+      console.log("XHR failed: " + status);
+    });
 };
 
 ccfp.deleteOverview = function () {
-    console.log("gonna remove all rows from overview");
-    d3.select("#overview-tbody").selectAll("tr").remove();
+  console.log("gonna remove all rows from overview");
+  d3.select("#overview-tbody")
+    .selectAll("tr")
+    .remove();
 };
 
+/*
+ * Creates a modal in the background for each abstract. They aren't
+ * visible by default. They can be popped up with Bootstrap modal
+ * attributes or functions.
+ * This function is way too long.
+ */
 ccfp.createScoringModals = function (data) {
   var body = d3.select("body");
   data.forEach(function (a, i) {
@@ -174,25 +199,37 @@ ccfp.createScoringModals = function (data) {
     }
 
     var divId = "abstract-" + id + "-modal";
-    var m = body.append("form").attr("id", "score-" + id)
-                .append("div")
-                .attr("id", divId)
-                .attr("role", "dialog")
-                .attr("tabindex", "-1")
-                .classed({"modal": true, "fade": true});
-    var c = m.append("div").classed({"modal-dialog": true, "modal-lg": true})
-             .append("div").classed("modal-content", true);
+
+    var m = body.append("form")
+      .attr("id", "score-" + id)
+      .append("div").classed({ "modal": true, "fade": true })
+      .attr("id", divId)
+      .attr("role", "dialog")
+      .attr("tabindex", "-1");
+
+    var c = m.append("div")
+      .classed({ "modal-dialog": true, "modal-lg": true })
+      .append("div")
+      .classed("modal-content", true);
+
     var h = c.append("div").classed("modal-header", true);
     var b = c.append("div").classed("modal-body", true);
     var f = c.append("div").classed("modal-footer", true);
 
-    h.append("button").classed("close", true).attr("data-dismiss", "modal").html("&times;");
-    h.append("h4").classed("modal-title", true).html("<strong>Scoring: </strong>" + a["title"]);
+    h.append("button").classed("close", true)
+      .attr("data-dismiss", "modal")
+      .html("&times;");
+    h.append("h4").classed("modal-title", true)
+      .html("<strong>Scoring: </strong>" + a["title"]);
 
     var mkrow = function (key, value) {
-      var r = b.append("div").classed({"row": true, "ccfp-view": true});
-          r.append("div").classed("col-sm-3", true).append("strong").html(key);
-          r.append("div").classed("col-sm-9", true).html(value);
+      var r = b.append("div").classed({ "row": true, "ccfp-view": true });
+      r.append("div")
+        .classed("col-sm-3", true)
+        .append("strong")
+        .html(key);
+      r.append("div").classed("col-sm-9", true)
+        .html(value);
     };
 
     mkrow("Author(s)", ccfp.formatAuthors(a));
@@ -204,18 +241,22 @@ ccfp.createScoringModals = function (data) {
 
     mkrow("Author Bio", "");
     b.append("div").classed("row", true)
-     .append("div").classed({"col-sm-12": true, "ccfp-view": true})
-     .append("textarea").attr("disabled", 1).attr("rows", 8).classed("form-control", true)
-     .text(a["attributes"]["bio"]);
+      .append("div").classed({ "col-sm-12": true, "ccfp-view": true })
+      .append("textarea").classed("form-control", true)
+      .attr("disabled", true)
+      .attr("rows", 8)
+      .text(a["attributes"]["bio"]);
 
     mkrow("Abstract", "");
     b.append("div").classed("row", true)
-     .append("div").classed({"col-sm-12": true, "ccfp-view": true})
-     .append("textarea").attr("disabled", 1).attr("rows", 8).classed("form-control", true)
-     .text(a["body"]);
+      .append("div").classed({ "col-sm-12": true, "ccfp-view": true })
+      .append("textarea")
+      .attr("disabled", true)
+      .attr("rows", 8).classed("form-control", true)
+      .text(a["body"]);
 
     var sliders = [];
-    var mkslider = function(name, slot) {
+    var mkslider = function (name, slot) {
       var domid = name.toLowerCase() + "-slider-" + id;
       var value = 50;
 
@@ -227,72 +268,123 @@ ccfp.createScoringModals = function (data) {
         value = a[slot][userEmail];
       }
 
-      var r = b.append("div").classed({"row": true, "ccfp-view": true})
-      r.append("div").classed("col-sm-3", true).append("strong").html(name);
-      var v = r.append("div").classed("col-sm-1", true).append("strong").text(value);
+      var r = b.append("div").classed({ "row": true, "ccfp-view": true });
+      r.append("div").classed("col-sm-3", true)
+        .append("strong")
+        .html(name);
+      var v = r.append("div").classed("col-sm-1", true)
+        .append("strong")
+        .text(value);
       r.append("div").classed("col-sm-8", true)
-         .append("input")
-           .attr("id", domid).attr("type", "text").style("width", "140px")
-           .attr("data-slider-id", domid)
-           .attr("data-slider-min", 0)  .attr("data-slider-max", 100)
-           .attr("data-slider-step", 1) .attr("data-slider-value", value);
+        .append("input")
+        .attr("id", domid)
+        .attr("type", "text")
+        .style("width", "140px")
+        .attr("data-slider-id", domid)
+        .attr("data-slider-min", 0)
+        .attr("data-slider-max", 100)
+        .attr("data-slider-step", 1)
+        .attr("data-slider-value", value);
 
-      var s = $("#" + domid).slider().on('slideStop', function() {
-        ccfp.updateScores(id, sliders, divId);
-      }).data('slider');
+      var s = $("#" + domid)
+        .slider()
+        .on('slideStop', function () {
+          ccfp.updateScores(id, sliders, divId);
+        })
+        .data('slider');
       // well this is weird ... it's best to update all scores at once
       // in a single ajax call so the sliders themselves, the cell containing
       // the score value, and the slot name all need to be in an array scoped
       // higher than this function so we can close over it ...
-      sliders.push({'slider': s, 'cell': v, 'slot': slot});
+      sliders.push({
+        'slider': s,
+        'cell': v,
+        'slot': slot
+      });
     };
 
+    b.append("hr");
     mkslider("Skill", "scores_a");
     mkslider("Quality", "scores_b");
     mkslider("Relevance", "scores_c");
+    b.append("hr");
+
+    mkrow("Comment (optional)", "");
+    var cform = b.append("form").classed("form-horizontal", true)
+      .attr("role", "form")
+      .attr("id", "comment-form-" + id);
+
+    cform.append("div").classed("row", true)
+      .append("div").classed({ "col-sm-12": true, "ccfp-view": true })
+      .append("textarea")
+      .attr("id", "new-comment-body")
+      .attr("name", "body")
+      .attr("rows", 4).classed("form-control", true);
+
+/*
+    var cbtn = cform.append("button")
+      .attr("id", "new-comment-save-button").classed({ "btn": true, "btn-default": true })
+      .text("Save Comment")
+      .attr("onclick", function () {
+        var bv = $("#new-comment-body").val();
+        var cd = { "abstract_id": id, "body": bv, "email": userEmail };
+        var js = JSON.stringify(cd);
+        console.log("SAVING NEW COMMENT", cd, js);
+        $.ajax({ url: "/comments/", type: "PUT", data: js, dataType: "json" })
+          .done(function (d, status, xhr) {
+            // write to new row
+          })
+          .fail(function (data, status, xhr) {
+            console.log("XHR save of abstract form failed.", data, status, xhr);
+          });
+      });
+*/
+    ccfp.populateComments(b, id);
 
     // previous / next / done buttons
     // TODO: probably a better way to do this d3-style
     var previous = data[i - 1];
-    var pbtn = f.append("button")
-      .classed({"btn": true, "btn-default": true})
+    var pbtn = f.append("button").classed({ "btn": true, "btn-default": true })
       .attr("data-dismiss", "modal")
       .text("< Previous");
 
-    if (typeof(previous) == "object" && previous.hasOwnProperty("id")) {
+    if (typeof (previous) == "object" && previous.hasOwnProperty("id")) {
       pbtn.attr("data-target", "#abstract-" + previous["id"] + "-modal")
-          .attr("data-id", previous["id"])
-          .attr("data-toggle", "modal");
+        .attr("data-id", previous["id"])
+        .attr("data-toggle", "modal");
     } else {
       pbtn.attr("disabled", true);
     }
 
     var next = data[i + 1];
-    var nbtn = f.append("button")
-      .classed({"btn": true, "btn-default": true})
+    var nbtn = f.append("button").classed({ "btn": true, "btn-default": true })
       .attr("data-dismiss", "modal")
       .text("Next >");
 
-    if (typeof(next) == "object" && next.hasOwnProperty("id")) {
+    if (typeof (next) == "object" && next.hasOwnProperty("id")) {
       nbtn.attr("data-target", "#abstract-" + next["id"] + "-modal")
-          .attr("data-id", next["id"])
-          .attr("data-toggle", "modal");
+        .attr("data-id", next["id"])
+        .attr("data-toggle", "modal");
     } else {
       nbtn.attr("disabled", true);
     }
 
-    f.append("button")
-      .classed({"btn": true, "btn-default": true})
+    f.append("button").classed({ "btn": true, "btn-default": true })
       .attr("data-dismiss", "modal")
       .text("Done");
   });
 };
 
-ccfp.updateScores = function(id, sliders, divId) {
+ccfp.updateScores = function (id, sliders, divId) {
   var su = [];
   sliders.forEach(function (s) {
     var score = s['slider'].getValue();
-    su.push({ "id": id, "slot": s['slot'], "email": userEmail, "score": score });
+    su.push({
+      "id": id,
+      "slot": s['slot'],
+      "email": userEmail,
+      "score": score
+    });
     s['cell'].text(score);
   });
 
@@ -302,22 +394,47 @@ ccfp.updateScores = function(id, sliders, divId) {
     url: '/updatescores',
     data: JSON.stringify(su),
     dataType: "json"
-  }).done(function(data, status, xhr) {
-    console.log(data);
-    // TODO: replace this with close/cancel buttons on the modal!
-    // reload the overview when the modal closes
-    $("#" + divId).on('hidden.bs.modal', function () {
-      ccfp.deleteOverview();
-      ccfp.renderOverview();
+  })
+    .done(function (data, status, xhr) {
+      console.log(data);
+      // TODO: replace this with close/cancel buttons on the modal!
+      // reload the overview when the modal closes
+      $("#" + divId)
+        .on('hidden.bs.modal', function () {
+          ccfp.deleteOverview();
+          ccfp.renderOverview();
+        });
     });
-  });
+};
+
+ccfp.populateComments = function (b, id) {
+  console.log("populateComments");
+  $.ajax({
+    url: "/comments/" + id,
+    type: "GET",
+    dataType: "json"
+  })
+    .done(function (data, status, xhr) {
+      var crows = b.selectAll("div")
+        .data(data)
+        .enter()
+        .append("div").classed({ "row": true, "ccfp-view": true });
+
+    })
+    .fail(function (data, status, xhr) {
+      console.log("XHR failed.", data, status, xhr);
+    });
+
 };
 
 ccfp.newAbstractForm = function () {
   $('#abstract-form')[0].reset();
-  $("#form-abstract-id").val("");
-  $('#abstract-form-modal-title').html("New Abstract");
-  $('#abstract-form-modal').modal()
+  $("#form-abstract-id")
+    .val("");
+  $('#abstract-form-modal-title')
+    .html("New Abstract");
+  $('#abstract-form-modal')
+    .modal()
 };
 
 ccfp.setupEditForm = function (id) {
@@ -326,45 +443,59 @@ ccfp.setupEditForm = function (id) {
   $.ajax({
     url: "/abstracts/" + id,
     dataType: "json"
-  }).done(function(data, status, xhr) {
-    $("#form-abstract-id").val(data["id"]);
-    $('#abstract-form-modal-title').html("Editing Abtract: " + data["title"]);
-    $("#body").val(data["body"]);
-    $("#title").val(data["title"]);
+  })
+    .done(function (data, status, xhr) {
+      $("#form-abstract-id")
+        .val(data["id"]);
+      $('#abstract-form-modal-title')
+        .html("Editing Abtract: " + data["title"]);
+      $("#body")
+        .val(data["body"]);
+      $("#title")
+        .val(data["title"]);
 
-    ["authors", "attributes"].forEach(function (a) {
-      if (data[a] == null) { data[a] = {}; }
+      ["authors", "attributes"].forEach(function (a) {
+          if (data[a] == null) {
+            data[a] = {};
+          }
+        });
+
+      // the backend supports multiple authors but the frontend work
+      // to expose that isn't complete. This code supports getting
+      // multiple authors by splitting into arrays that can be joined
+      // into the existing fields in the UI
+      var authors = [];
+      var emails = [];
+      for (var a in data["authors"]) {
+        if (data["authors"].hasOwnProperty(a) && data["authors"][a] != "") {
+          emails.push(a);
+          authors.push(data["authors"][a]);
+        }
+      };
+      $("#author0")
+        .val(authors.join(", "));
+      $("#email0")
+        .val(emails.join(", "));
+
+      // fields that are stored as attributes
+      ["company", "jobtitle", "bio", "picture_link", "audience"].forEach(function (key) {
+        if (data["attributes"].hasOwnProperty(key)) {
+          $("#" + key)
+            .val(data["attributes"][key]);
+        } else {
+          $("#" + key)
+            .val("");
+        }
+      });
+
+      $('#abstract-form-modal-title')
+        .html("Edit Abstract " + id);
+      $('#abstract-form-modal')
+        .modal()
+    })
+    .fail(function (data, status, xhr) {
+      console.log("XHR fetch for abstract form failed.", data, status, xhr);
     });
-
-    // the backend supports multiple authors but the frontend work
-    // to expose that isn't complete. This code supports getting
-    // multiple authors by splitting into arrays that can be joined
-    // into the existing fields in the UI
-    var authors = [];
-    var emails = [];
-    for (var a in data["authors"]) {
-      if (data["authors"].hasOwnProperty(a) && data["authors"][a] != "") {
-        emails.push(a);
-        authors.push(data["authors"][a]);
-      }
-    };
-    $("#author0").val(authors.join(", "));
-    $("#email0").val(emails.join(", "));
-
-    // fields that are stored as attributes
-    ["company", "jobtitle", "bio", "picture_link", "audience"].forEach(function (key) {
-      if (data["attributes"].hasOwnProperty(key)) {
-        $("#" + key).val(data["attributes"][key]);
-      } else {
-        $("#" + key).val("");
-      }
-    });
-
-    $('#abstract-form-modal-title').html("Edit Abstract " + id);
-    $('#abstract-form-modal').modal()
-  }).fail(function(data, status, xhr) {
-    console.log("XHR fetch for abstract form failed.", data, status, xhr);
-  });
 };
 
 // for now, only support a single author field even though the
@@ -373,22 +504,33 @@ ccfp.saveAbstractForm = function () {
   var abs = {
     "authors": {},
     "attributes": {
-      "company": $("#company").val(),
-      "jobtitle": $("#jobtitle").val(),
-      "bio": $("#bio").val(),
-      "picture_link": $("#picture_link").val(),
-      "audience": $("#audience").val()
+      "company": $("#company")
+        .val(),
+      "jobtitle": $("#jobtitle")
+        .val(),
+      "bio": $("#bio")
+        .val(),
+      "picture_link": $("#picture_link")
+        .val(),
+      "audience": $("#audience")
+        .val()
     },
-    "title": $("#title").val(),
-    "body": $("#body").val()
+    "title": $("#title")
+      .val(),
+    "body": $("#body")
+      .val()
   };
-  abs["authors"][$("#email0").val()] = $("#author0").val();
+  abs["authors"][$("#email0")
+    .val()
+  ] = $("#author0")
+    .val();
 
   // if the ID is set, that means this is an edit so pass it to the
   // server, otherwise the field must not exist in the JSON or parsing
   // will fail since "" is an invalid uuid
   var method = "PUT";
-  var id = $("#form-abstract-id").val();
+  var id = $("#form-abstract-id")
+    .val();
   if (id.length == 36) {
     abs["id"] = id;
     method = "PATCH";
@@ -399,13 +541,15 @@ ccfp.saveAbstractForm = function () {
     type: method,
     data: JSON.stringify(abs),
     dataType: "json"
-  }).done(function(data, status, xhr) {
-    ccfp.deleteOverview();
-    ccfp.renderOverview();
-    console.log("Saved to backend.", data, status, xhr);
-  }).fail(function(data, status, xhr) {
-    console.log("XHR save of abstract form failed.", data, status, xhr);
-  });
+  })
+    .done(function (data, status, xhr) {
+      ccfp.deleteOverview();
+      ccfp.renderOverview();
+      console.log("Saved to backend.", data, status, xhr);
+    })
+    .fail(function (data, status, xhr) {
+      console.log("XHR save of abstract form failed.", data, status, xhr);
+    });
 };
 
 // persona can take a second or two to do its round trip with the
@@ -416,25 +560,29 @@ ccfp.run = function () {
   $.ajax({
     url: '/abstracts/',
     dataType: "json"
-  }).done(function(data, status, xhr) {
-    ccfp.createScoringModals(data);
-    // render the overview after the modals are ready
-    ccfp.renderOverview();
-  }).fail(function(xhr, status, err) {
-    console.log("XHR failed: " + status);
-  });
-
-  $('#new-abstract-link').on('click', function (e) {
-    ccfp.newAbstractForm();
-  });
-
-  $('#abstract-form-submit').on('click', function (e) {
-    $("#abstract-form").validate({
-      submitHandler: ccfp.saveAbstractForm
+  })
+    .done(function (data, status, xhr) {
+      ccfp.createScoringModals(data);
+      // render the overview after the modals are ready
+      ccfp.renderOverview();
+    })
+    .fail(function (xhr, status, err) {
+      console.log("XHR failed: " + status);
     });
-  });
 
-  //$("#abstract-form").validate({
+  $('#new-abstract-link')
+    .on('click', function (e) {
+      ccfp.newAbstractForm();
+    });
+
+  $('#abstract-form-submit')
+    .on('click', function (e) {
+      $("#abstract-form")
+        .validate({
+          submitHandler: ccfp.saveAbstractForm
+        });
+    });
+
   jQuery.validator.setDefaults({
     debug: true,
     errorClass: 'has-error',
@@ -450,8 +598,4 @@ ccfp.run = function () {
       $(element).closest('.form-group').find('.help-block').text(error.text());
     }
   });
-};
-
-ccfp.disable = function () {
-    console.log("STUB: disable.");
 };
