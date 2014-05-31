@@ -41,6 +41,10 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	a := Abstract{}
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(&a)
+
 	switch r.Method {
 	case "GET":
 		alist, err := ListAbstracts(cass)
@@ -48,26 +52,29 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("Failed to list abstracts: %s", err), 500)
 		}
 		jsonOut(w, r, alist)
+		return
 	case "PUT":
-		a := Abstract{}
-		dec := json.NewDecoder(r.Body)
-		err := dec.Decode(&a)
-
 		if err != nil {
-			http.Error(w, fmt.Sprintf("invalid json data: %s", err), 500)
+			http.Error(w, fmt.Sprintf("AbstractsHandler/PUT invalid json data: %s", err), 500)
 		}
 
 		a.Id = gocql.TimeUUID()
 		a.Created = time.Now()
-		err = a.Save(cass)
+	case "PATCH":
 		if err != nil {
-			http.Error(w, fmt.Sprintf("persistence failed: %s", err), 500)
+			http.Error(w, fmt.Sprintf("AbstractsHandler/PATCH invalid json data: %s", err), 500)
 		}
-
-		jsonOut(w, r, a)
 	default:
 		http.Error(w, fmt.Sprintf("method '%s' not implemented", r.Method), 500)
+		return
 	}
+
+	err = a.Save(cass)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("AbstractsHandler/PUT a.Save() failed: %s", err), 500)
+	}
+
+	jsonOut(w, r, a)
 }
 
 func AbstractHandler(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +117,6 @@ func ScoreUpdateHandler(w http.ResponseWriter, r *http.Request) {
 func checkAuth(w http.ResponseWriter, r *http.Request) bool {
 	log.Println("checkAuth()")
 	sess, err := store.Get(r, sessCookie)
-	log.Printf("Session ID: '%s'\n", sess.ID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to read cookie: %s\n", err), 400)
 		return false
@@ -121,10 +127,9 @@ func checkAuth(w http.ResponseWriter, r *http.Request) bool {
 		sess.Save(r, w)
 	}
 
-	log.Printf("sess.Values[email]: '%s'\n", sess.Values["email"])
 	if sess.Values["email"] != nil {
 		email := sess.Values["email"].(string)
-		log.Printf("Email is '%s'\n", email)
+		log.Printf("sess.Values[email]: '%s'\n", sess.Values["email"])
 		if email != "" {
 			return true
 		}
