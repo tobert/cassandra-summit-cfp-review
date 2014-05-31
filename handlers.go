@@ -122,6 +122,58 @@ func ScoreUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	jsonOut(w, r, scores)
 }
 
+func CommentsHandler(w http.ResponseWriter, r *http.Request) {
+	if !checkAuth(w, r) {
+		return
+	}
+	c := Comment{}
+
+	if r.Method == "GET" {
+		vars := mux.Vars(r)
+		absid, err := gocql.ParseUUID(vars["abstract_id"])
+		if err != nil {
+			log.Printf("Could not parse uuid '%s': %s\n", vars["id"], err)
+			http.Error(w, fmt.Sprintf("could not parse uuid: '%s'", err), 500)
+			return
+		}
+		clist, err := ListComments(cass, absid)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to list comments: %s", err), 500)
+			return
+		}
+		jsonOut(w, r, clist)
+		return
+	} else if r.Method == "PUT" || r.Method == "PATCH" {
+		dec := json.NewDecoder(r.Body)
+		err := dec.Decode(&c)
+		if err != nil {
+			log.Printf("CommentsHandler/%s invalid json data: %s", r.Method, err)
+			http.Error(w, fmt.Sprintf("CommentsHandler/%s invalid json data: %s", r.Method, err), 500)
+		}
+	} else {
+		http.Error(w, fmt.Sprintf("method '%s' not implemented", r.Method), 500)
+		return
+	}
+
+	if r.Method == "PUT" {
+		c.Id = gocql.TimeUUID()
+	}
+
+	// bare minimum input checking
+	if c.Email == "" || c.Body == "" {
+		log.Printf("CommentsHandler/%s required field missing\n", r.Method)
+		http.Error(w, "required field missing", 500)
+		return
+	}
+
+	err := c.Save(cass)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("CommentHandler c.Save() failed: %s", err), 500)
+	}
+
+	jsonOut(w, r, c)
+}
+
 // returns the email string if authenticated (via persona), it won't
 // be there at all if the user didn't authenticate
 func checkAuth(w http.ResponseWriter, r *http.Request) bool {

@@ -21,6 +21,14 @@ CREATE TABLE abstracts (
     PRIMARY KEY(id)
 );
 
+CREATE TABLE comments (
+    abstract_id uuid,
+    id           timeuuid,
+	email        text,
+    body         text,
+    PRIMARY KEY(abstract_id, id)
+);
+
 CREATE TABLE abstract_email_index (
     email text,
 	abstracts set<uuid>,
