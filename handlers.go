@@ -69,6 +69,12 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// bare minimum input checking
+	if a.Title == "" || a.Body == "" || len(a.Attrs) == 0 || len(a.Authors) == 0 {
+		http.Error(w, "required field missing", 500)
+		return
+	}
+
 	err = a.Save(cass)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("AbstractsHandler/PUT a.Save() failed: %s", err), 500)
