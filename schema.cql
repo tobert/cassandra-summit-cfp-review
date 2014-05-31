@@ -10,7 +10,6 @@ CREATE TABLE abstracts (
     authors      map<text,text>,
     tags         set<text>,
 	attributes   map<text,text>,
-	comments     map<timeuuid,text>,
 	scores_a     map<text,float>,
 	scores_b     map<text,float>,
 	scores_c     map<text,float>,
