@@ -80,7 +80,8 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = a.Save(cass)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("AbstractsHandler/PUT a.Save() failed: %s", err), 500)
+		log.Printf("AbstractsHandler/%s a.Save() failed: %s", r.Method, err)
+		http.Error(w, fmt.Sprintf("AbstractsHandler/%s a.Save() failed: %s", r.Method, err), 500)
 	}
 
 	jsonOut(w, r, a)
