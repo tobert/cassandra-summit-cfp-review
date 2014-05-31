@@ -56,7 +56,7 @@ ccfp.computeStats = function (data) {
     });
 
     // copy over most fields as-is
-    ["id", "title", "attributes", "body", "tags", "comments", "scores_names"].forEach(function (f) {
+    ["id", "title", "attributes", "body", "tags", "scores_names"].forEach(function (f) {
       curr[f] = a[f];
     });
 
