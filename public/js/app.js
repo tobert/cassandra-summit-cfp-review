@@ -107,18 +107,13 @@ ccfp.computeStats = function (data) {
 };
 
 ccfp.renderOverview = function () {
-  $.ajax({
-    url: '/abstracts/',
-    dataType: "json"
-  })
+  $.ajax({ url: '/abstracts/', dataType: "json" })
     .done(function (data, status, xhr) {
       stats = ccfp.computeStats(data);
       // create a row for each abstract
       var tr = d3.select("#overview-tbody")
         .selectAll("tr")
-        .data(stats.abstracts, function (d) {
-          return d["id"];
-        })
+        .data(stats.abstracts, function (d) { return d["id"]; })
         .enter()
         .append("tr");
 
@@ -131,15 +126,9 @@ ccfp.renderOverview = function () {
         })
         .enter()
         .append("td")
-        .attr("data-field", function (d) {
-          return d[2];
-        })
-        .attr("data-target", function (d) {
-          return "#abstract-" + d[1]["id"] + "-modal";
-        })
-        .attr("data-id", function (d) {
-          return d[1]["id"];
-        })
+        .attr("data-field", function (d) { return d[2]; })
+        .attr("data-target", function (d) { return "#abstract-" + d[1]["id"] + "-modal"; })
+        .attr("data-id", function (d) { return d[1]["id"]; })
         .attr("data-toggle", "modal")
         .html(function (d) {
           if (d[2] == "score-link") {
@@ -160,8 +149,7 @@ ccfp.renderOverview = function () {
         .attr("data-target", null)
         .attr("data-toggle", null)
         .on('click', function (e) {
-          var id = $(this)
-            .data('id');
+          var id = $(this).data('id');
           ccfp.setupEditForm(id);
         })
         .append("a")
@@ -174,7 +162,6 @@ ccfp.renderOverview = function () {
 };
 
 ccfp.deleteOverview = function () {
-  console.log("gonna remove all rows from overview");
   d3.select("#overview-tbody")
     .selectAll("tr")
     .remove();
@@ -286,21 +273,15 @@ ccfp.createScoringModals = function (data) {
         .attr("data-slider-step", 1)
         .attr("data-slider-value", value);
 
-      var s = $("#" + domid)
-        .slider()
-        .on('slideStop', function () {
-          ccfp.updateScores(id, sliders, divId);
-        })
-        .data('slider');
+      var s = $("#" + domid).slider().on('slideStop', function () {
+        ccfp.updateScores(id, sliders, divId);
+      }).data('slider');
+
       // well this is weird ... it's best to update all scores at once
       // in a single ajax call so the sliders themselves, the cell containing
       // the score value, and the slot name all need to be in an array scoped
       // higher than this function so we can close over it ...
-      sliders.push({
-        'slider': s,
-        'cell': v,
-        'slot': slot
-      });
+      sliders.push({ 'slider': s, 'cell': v, 'slot': slot });
     };
 
     b.append("hr");
@@ -379,12 +360,7 @@ ccfp.updateScores = function (id, sliders, divId) {
   var su = [];
   sliders.forEach(function (s) {
     var score = s['slider'].getValue();
-    su.push({
-      "id": id,
-      "slot": s['slot'],
-      "email": userEmail,
-      "score": score
-    });
+    su.push({ "id": id, "slot": s['slot'], "email": userEmail, "score": score });
     s['cell'].text(score);
   });
 
@@ -396,24 +372,18 @@ ccfp.updateScores = function (id, sliders, divId) {
     dataType: "json"
   })
     .done(function (data, status, xhr) {
-      console.log(data);
       // TODO: replace this with close/cancel buttons on the modal!
       // reload the overview when the modal closes
-      $("#" + divId)
-        .on('hidden.bs.modal', function () {
-          ccfp.deleteOverview();
-          ccfp.renderOverview();
-        });
+      $("#" + divId).on('hidden.bs.modal', function () {
+        ccfp.deleteOverview();
+        ccfp.renderOverview();
+      });
     });
 };
 
 ccfp.populateComments = function (b, id) {
   console.log("populateComments");
-  $.ajax({
-    url: "/comments/" + id,
-    type: "GET",
-    dataType: "json"
-  })
+  $.ajax({ url: "/comments/" + id, type: "GET", dataType: "json" })
     .done(function (data, status, xhr) {
       var crows = b.selectAll("div")
         .data(data)
@@ -424,41 +394,30 @@ ccfp.populateComments = function (b, id) {
     .fail(function (data, status, xhr) {
       console.log("XHR failed.", data, status, xhr);
     });
-
 };
 
 ccfp.newAbstractForm = function () {
   $('#abstract-form')[0].reset();
-  $("#form-abstract-id")
-    .val("");
-  $('#abstract-form-modal-title')
-    .html("New Abstract");
-  $('#abstract-form-modal')
-    .modal()
+  $("#form-abstract-id").val("");
+  $('#abstract-form-modal-title').html("New Abstract");
+  $('#abstract-form-modal').modal()
 };
 
 ccfp.setupEditForm = function (id) {
   $('#abstract-form')[0].reset();
 
-  $.ajax({
-    url: "/abstracts/" + id,
-    dataType: "json"
-  })
+  $.ajax({ url: "/abstracts/" + id, dataType: "json" })
     .done(function (data, status, xhr) {
-      $("#form-abstract-id")
-        .val(data["id"]);
-      $('#abstract-form-modal-title')
-        .html("Editing Abtract: " + data["title"]);
-      $("#body")
-        .val(data["body"]);
-      $("#title")
-        .val(data["title"]);
+      $("#form-abstract-id").val(data["id"]);
+      $('#abstract-form-modal-title').html("Editing Abtract: " + data["title"]);
+      $("#body").val(data["body"]);
+      $("#title").val(data["title"]);
 
       ["authors", "attributes"].forEach(function (a) {
-          if (data[a] == null) {
-            data[a] = {};
-          }
-        });
+        if (data[a] == null) {
+          data[a] = {};
+        }
+      });
 
       // the backend supports multiple authors but the frontend work
       // to expose that isn't complete. This code supports getting
@@ -472,26 +431,20 @@ ccfp.setupEditForm = function (id) {
           authors.push(data["authors"][a]);
         }
       };
-      $("#author0")
-        .val(authors.join(", "));
-      $("#email0")
-        .val(emails.join(", "));
+      $("#author0").val(authors.join(", "));
+      $("#email0").val(emails.join(", "));
 
       // fields that are stored as attributes
       ["company", "jobtitle", "bio", "picture_link", "audience"].forEach(function (key) {
         if (data["attributes"].hasOwnProperty(key)) {
-          $("#" + key)
-            .val(data["attributes"][key]);
+          $("#" + key).val(data["attributes"][key]);
         } else {
-          $("#" + key)
-            .val("");
+          $("#" + key).val("");
         }
       });
 
-      $('#abstract-form-modal-title')
-        .html("Edit Abstract " + id);
-      $('#abstract-form-modal')
-        .modal()
+      $('#abstract-form-modal-title').html("Edit Abstract " + id);
+      $('#abstract-form-modal').modal()
     })
     .fail(function (data, status, xhr) {
       console.log("XHR fetch for abstract form failed.", data, status, xhr);
@@ -504,44 +457,28 @@ ccfp.saveAbstractForm = function () {
   var abs = {
     "authors": {},
     "attributes": {
-      "company": $("#company")
-        .val(),
-      "jobtitle": $("#jobtitle")
-        .val(),
-      "bio": $("#bio")
-        .val(),
-      "picture_link": $("#picture_link")
-        .val(),
-      "audience": $("#audience")
-        .val()
+      "company": $("#company").val(),
+      "jobtitle": $("#jobtitle").val(),
+      "bio": $("#bio").val(),
+      "picture_link": $("#picture_link").val(),
+      "audience": $("#audience").val()
     },
-    "title": $("#title")
-      .val(),
-    "body": $("#body")
-      .val()
+    "title": $("#title").val(),
+    "body": $("#body").val()
   };
-  abs["authors"][$("#email0")
-    .val()
-  ] = $("#author0")
-    .val();
+  abs["authors"][$("#email0").val()] = $("#author0").val();
 
   // if the ID is set, that means this is an edit so pass it to the
   // server, otherwise the field must not exist in the JSON or parsing
   // will fail since "" is an invalid uuid
   var method = "PUT";
-  var id = $("#form-abstract-id")
-    .val();
+  var id = $("#form-abstract-id").val();
   if (id.length == 36) {
     abs["id"] = id;
     method = "PATCH";
   }
 
-  $.ajax({
-    url: "/abstracts/",
-    type: method,
-    data: JSON.stringify(abs),
-    dataType: "json"
-  })
+  $.ajax({ url: "/abstracts/", type: method, data: JSON.stringify(abs), dataType: "json" })
     .done(function (data, status, xhr) {
       ccfp.deleteOverview();
       ccfp.renderOverview();
@@ -557,10 +494,7 @@ ccfp.saveAbstractForm = function () {
 // that code in run() and let the persona setup call it.
 ccfp.run = function () {
   // create a modal for each entry for entering scores
-  $.ajax({
-    url: '/abstracts/',
-    dataType: "json"
-  })
+  $.ajax({ url: '/abstracts/', dataType: "json" })
     .done(function (data, status, xhr) {
       ccfp.createScoringModals(data);
       // render the overview after the modals are ready
@@ -570,18 +504,15 @@ ccfp.run = function () {
       console.log("XHR failed: " + status);
     });
 
-  $('#new-abstract-link')
-    .on('click', function (e) {
-      ccfp.newAbstractForm();
-    });
+  $('#new-abstract-link').on('click', function (e) {
+    ccfp.newAbstractForm();
+  });
 
-  $('#abstract-form-submit')
-    .on('click', function (e) {
-      $("#abstract-form")
-        .validate({
-          submitHandler: ccfp.saveAbstractForm
-        });
+  $('#abstract-form-submit').on('click', function (e) {
+    $("#abstract-form").validate({
+      submitHandler: ccfp.saveAbstractForm
     });
+  });
 
   jQuery.validator.setDefaults({
     debug: true,
