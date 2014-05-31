@@ -128,19 +128,15 @@ FROM abstracts WHERE id=?`, id)
 }
 
 // Create a new abstract record in the DB. Only the base fields
-// are inserted in this call.
+// are inserted in this call so the frontend doesn't have to persist
+// scores between edits - those are written through ScoreUpdate.Save()
 func (a *Abstract) Save(cass *gocql.Session) error {
 	return cass.Query(`
-INSERT INTO abstracts (
-	id, title, body, created, authors, tags, attributes, comments,
-	scores_a, scores_b, scores_c, scores_d,
-	scores_e, scores_f, scores_g, scores_names)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`,
-		a.Id, a.Title, a.Body, a.Created, a.Authors, a.Tags,
-		a.Attrs, a.Comments, a.ScoresA, a.ScoresB, a.ScoresC,
-		a.ScoresD, a.ScoresE, a.ScoresF, a.ScoresG, a.ScoresNames,
-	).Exec()
+INSERT INTO abstracts
+	(id, title, body, created, authors, tags, attributes, comments)
+VALUES
+    (?,  ?,     ?,    ?,       ?,       ?,    ?,          ?)
+`, a.Id, a.Title, a.Body, a.Created, a.Authors, a.Tags, a.Attrs, a.Comments).Exec()
 }
 
 func (su *ScoreUpdate) Save(cass *gocql.Session) error {
