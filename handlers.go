@@ -55,6 +55,7 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	case "PUT":
 		if err != nil {
+			log.Printf("AbstractsHandler/PUT invalid json data: %s", err)
 			http.Error(w, fmt.Sprintf("AbstractsHandler/PUT invalid json data: %s", err), 500)
 		}
 
@@ -62,6 +63,7 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 		a.Created = time.Now()
 	case "PATCH":
 		if err != nil {
+			log.Printf("AbstractsHandler/PATCH invalid json data: %s", err)
 			http.Error(w, fmt.Sprintf("AbstractsHandler/PATCH invalid json data: %s", err), 500)
 		}
 	default:
@@ -71,6 +73,7 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 
 	// bare minimum input checking
 	if a.Title == "" || a.Body == "" || len(a.Attrs) == 0 || len(a.Authors) == 0 {
+		log.Printf("AbstractsHandle required field missing")
 		http.Error(w, "required field missing", 500)
 		return
 	}
