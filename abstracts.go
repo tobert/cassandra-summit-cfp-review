@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gocql/gocql"
-	"log"
 	"time"
 )
 
@@ -109,7 +108,6 @@ FROM abstracts`).Iter()
 		return nil, err
 	}
 
-	log.Printf("ListAbtracts returning '%v'\n", alist)
 	return alist, nil
 }
 
