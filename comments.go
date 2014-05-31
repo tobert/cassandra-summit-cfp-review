@@ -21,13 +21,15 @@ package main
 
 import (
 	"github.com/gocql/gocql"
+	"time"
 )
 
 type Comment struct {
-	AbsId gocql.UUID `json:"abstract_id"`
-	Id    gocql.UUID `json:"id"`
-	Email Email      `json:"email"`
-	Body  string     `json:"body"`
+	AbsId   gocql.UUID `json:"abstract_id"`
+	Id      gocql.UUID `json:"id"`
+	Created time.Time  `json:"created"`
+	Email   Email      `json:"email"`
+	Body    string     `json:"body"`
 }
 
 type Comments []Comment
@@ -41,6 +43,7 @@ func ListComments(cass *gocql.Session, absId gocql.UUID) (Comments, error) {
 		c := Comment{}
 		ok := iq.Scan(&c.AbsId, &c.Id, &c.Email, &c.Body)
 		if ok {
+			c.Created = c.Id.Time()
 			clist = append(clist, c)
 		} else {
 			break
