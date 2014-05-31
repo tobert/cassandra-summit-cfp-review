@@ -131,9 +131,9 @@ FROM abstracts WHERE id=?`, id)
 func (a *Abstract) Save(cass *gocql.Session) error {
 	return cass.Query(`
 INSERT INTO abstracts
-	(id, title, body, created, authors, tags, attributes)
+	(id, title,   body,   created,   authors,   tags,   attributes)
 VALUES
-    (?,  ?,     ?,    ?,       ?,       ?,    ?,          ?)
+    (?,  ?,       ?,      ?,         ?,         ?,      ?)
 `, a.Id, a.Title, a.Body, a.Created, a.Authors, a.Tags, a.Attrs).Exec()
 }
 
