@@ -64,6 +64,8 @@
         <th>Avg Skill</th>
         <th>Avg Quality</th>
         <th>Avg Relevance</th>
+        <th></th>
+        <th></th>
       </tr>
     </thead>
     <tbody id="overview-tbody">
@@ -72,80 +74,89 @@
 </div>
 
 <!-- a form modal for new/editing abstracts -->
+<form role="form" id="abstract-form" class="form-horizontal" method="GET" action="">
 <div class="modal fade" id="abstract-form-modal" tabindex="-1" role="dialog">
 <div class="modal-dialog modal-lg">
 <div class="modal-content">
 <div class="modal-header" id="abstract-form-modal-header">
   <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-  <h4 class="modal-title">New Abstract</h4>
+  <h4 class="modal-title" id="abstract-form-modal-title">New Abstract</h4>
 </div><!-- modal-header -->
 <div class="modal-body">
-  <form class="form-horizontal" role="form" action="PUT">
+  <input type="hidden" name="id" id="form-abstract-id" value=""/>
   <fieldset>
   <div class="form-group">
-    <label class="col-sm-2 control-label" for="author">Name</label>
+    <label class="col-sm-2 control-label" for="author0">Author</label>
     <div class="col-sm-10">
-      <input id="author" name="author" type="text" placeholder="First Last" class="form-control" required="">
+      <input id="author0" name="author0" type="text" placeholder="Name" class="form-control" required="1">
     </div>
   </div>
   <div class="form-group">
-    <label class="col-sm-2 control-label" for="email">Email</label>
+    <label class="col-sm-2 control-label" for="email0">Email</label>
     <div class="col-sm-10">
-      <input id="email" name="email" type="text" placeholder="Email" class="form-control" required="">
+      <input id="email0" name="email0" type="text"
+       placeholder="foo@bar.com" class="form-control" required="1">
     </div>
   </div>
   <div class="form-group">
     <label class="col-sm-2 control-label" for="company">Company Name</label>
     <div class="col-sm-10">
-      <input id="company" name="company" type="text" placeholder="Company" class="form-control" required="">
+      <input id="company" name="company" type="text"
+       placeholder="Company" class="form-control" required="1">
     </div>
   </div>
   <div class="form-group">
     <label class="col-sm-2 control-label" for="jobtitle">Job Title</label>
     <div class="col-sm-10">
-      <input id="jobtitle" name="jobtitle" type="text" placeholder="Job Title" class="form-control">
+      <input id="jobtitle" name="jobtitle" type="text"
+       placeholder="Job Title" class="form-control" required="1">
     </div>
   </div>
   <div class="form-group">
     <label class="col-sm-2 control-label" for="bio">Bio</label>
     <div class="col-sm-10">
-      <textarea id="bio" name="bio" class="form-control" rows="8"></textarea>
+      <textarea id="bio" name="bio"
+       class="form-control" rows="8" required="1"></textarea>
     </div>
   </div>
   <div class="form-group">
     <label class="col-sm-2 control-label" for="Link to Picture">Link to Picture</label>
     <div class="col-sm-10">
-      <input id="Link to Picture" name="Link to Picture" type="text" placeholder="http://example.com/me.jpg" class="form-control">
+      <input id="picture_link" name="Link to Picture"
+       type="text" placeholder="http://example.com/me.jpg" class="form-control" required="1">
     </div>
   </div>
   <div class="form-group">
-    <label class="col-sm-2 control-label" for="title">Title</label>
+    <label class="col-sm-2 control-label" for="title">Talk Title</label>
     <div class="col-sm-10">
-      <input id="title" name="title" type="text" placeholder="Cassandra is Awesome" class="form-control" required="">
+      <input id="title" name="title" type="text"
+       placeholder="Cassandra is Awesome" class="form-control" required="1">
     </div>
   </div>
   <div class="form-group">
-    <label class="col-sm-2 control-label" for="abstract">Abstract</label>
+    <label class="col-sm-2 control-label" for="body">Abstract</label>
     <div class="col-sm-10">
-      <textarea id="abstract" name="abstract" class="form-control" rows="8"></textarea>
+      <textarea id="body" name="body"
+       class="form-control" rows="8" required="1"></textarea>
     </div>
   </div>
   <div class="form-group">
     <label class="col-sm-2 control-label" for="audience">Target Audience</label>
     <div class="col-sm-10">
-      <input id="audience" name="audience" type="text" placeholder="engineers, software developers, architects, execs" class="form-control">
+      <input id="audience" name="audience" type="text"
+       placeholder="engineers, software developers, architects, execs" class="form-control">
     </div>
   </div>
   </fieldset>
-  </form>
 </div><!-- modal-body -->
 <div class="modal-footer" id="abstract-form-modal-footer">
-  <button type="button" class="btn btn-success" id="abstract-form-submit">Save</button>
+  <button type="submit" class="btn btn-primary" id="abstract-form-submit">Save</button>
   <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
 </div><!-- modal-footer -->
 </div><!-- modal-content -->
 </div><!-- modal-dialog -->
 </div><!-- modal -->
+</form>
 </div><!-- container -->
 
 <footer class="footer">
@@ -157,6 +168,7 @@
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+<script src="js/jquery.validate.min.js"></script>
 <script src="js/bootstrap-slider.js"></script>
 <script src="js/d3.v3.min.js"></script>
 <script src="//login.persona.org/include.js"></script>

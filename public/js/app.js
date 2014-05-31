@@ -18,7 +18,14 @@
 
 var ccfp = ccfp || {};
 
-ccfp.ScoresFields = ["scores_a", "scores_b", "scores_c", "scores_d", "scores_e", "scores_f", "scores_g"];
+ccfp.scores_fields = ["scores_a", "scores_b", "scores_c", "scores_d", "scores_e", "scores_f", "scores_g"];
+
+// needs to match the table structure in index.html
+ccfp.table_fields = [
+  "authors", "title", "scores_a", "scores_b", "scores_c",
+  "scores_a-avg", "scores_b-avg", "scores_c-avg",
+  "score-link", "edit-link"
+];
 
 // flatten the authors map to a comma-separated list
 ccfp.formatAuthors = function(item) {
@@ -43,20 +50,24 @@ ccfp.computeStats = function (data) {
     numAbstracts++;
     var curr = {};
 
+    // make sure all table fields are defined so D3 can set up
+    // the rows properly
+    ccfp.table_fields.map(function (f) { curr[f] = null; });
+
     // copy over most fields as-is
     ["id", "title", "attributes", "body", "tags", "comments", "scores_names"].forEach(function(f) {
-      curr[f] = a[f]
+      curr[f] = a[f];
     });
 
     // if one score is set, assume the user set all scores
-    if (a["scores_a"].hasOwnProperty(userEmail)) {
+    if (a["scores_a"] != null && a["scores_a"].hasOwnProperty(userEmail)) {
       numScored++;
     }
 
     curr["authors"] = ccfp.formatAuthors(a);
 
     // total all of the score fields across reviewers
-    ccfp.ScoresFields.forEach(function (field) {
+    ccfp.scores_fields.forEach(function (field) {
       // track total & count to compute average later
       var total_field = field + "-total";
       var count_field = field + "-count";
@@ -66,18 +77,22 @@ ccfp.computeStats = function (data) {
       for (key in a[field]) { // abstract/scores_a
         if (a[field].hasOwnProperty(key)) { // abstract/scores_a/email
           curr[count_field]++;
-          curr[total_field] += a[field][key];
-          curr[field] = a[field][key]; // current user's entry
+          curr[total_field] += a[field][key] || 0;
+          curr[field] = a[field][key] || 0; // current user's entry
         }
       }
     });
 
     // compute averages
-    ccfp.ScoresFields.forEach(function (field) {
+    ccfp.scores_fields.forEach(function (field) {
       var total_field = field + "-total";
       var count_field = field + "-count";
       var avg_field = field + "-avg";
-      curr[avg_field] = curr[total_field] / curr[count_field];
+      if (curr[count_field] == 0) {
+        curr[avg_field] = 0;
+      } else {
+        curr[avg_field] = curr[total_field] / curr[count_field];
+      }
     });
 
     absStats.push(curr);
@@ -96,29 +111,46 @@ ccfp.renderOverview = function () {
     dataType: "json"
   }).done(function(data, status, xhr) {
     stats = ccfp.computeStats(data);
-
     // create a row for each abstract
     var tr = d3.select("#overview-tbody")
       .selectAll("tr")
-      .data(stats.abstracts)
+      .data(stats.abstracts, function (d) { return d["id"]; })
       .enter()
-      .append("tr")
-      .attr("data-id", function(d) { return d["id"]; })
-      .attr("data-toggle", "modal")
-      .attr("data-target", function(d) { return "#abstract-" + d["id"] + "-modal" });
+      .append("tr");
 
     // fill in the fields for each abstract
-    var td = tr.selectAll("td")
+    tr.selectAll("td")
       .data(function (d) {
-        return [
-          d["authors"], d["title"],
-          d["scores_a"], d["scores_b"], d["scores_c"],
-          d["scores_a-avg"], d["scores_b-avg"], d["scores_c-avg"]
-       ];
+         return ccfp.table_fields.map(function (f) { return [d[f], d, f]; });
       })
       .enter()
       .append("td")
-      .text(function(d) { return d; });
+      .attr("data-field", function (d) { return d[2]; })
+      .attr("data-target", function(d) { return "#abstract-" + d[1]["id"] + "-modal"; })
+      .attr("data-id", function(d) { return d[1]["id"]; })
+      .attr("data-toggle", "modal")
+      .html(function (d) {
+         if (d[2] == "score-link") {
+           return '<a href="#">score</a>';
+         }
+         return d[0];
+      });
+
+    // change the edit link to open the editing modal using plain onclick
+    // where it's more straightforward to pass the id over
+    tr.selectAll("td").select(function (d) {
+      if (d[2] == "edit-link") {
+        return this;
+      }
+      return null;
+    })
+    .attr("data-target", null)
+    .attr("data-toggle", null)
+    .on('click', function (e) {
+      var id = $(this).data('id');
+      ccfp.setupEditForm(id);
+    })
+    .append("a").attr("href", "#").text("edit");
   }).fail(function(xhr, status, err) {
     console.log("XHR failed: " + status);
   });
@@ -131,11 +163,15 @@ ccfp.deleteOverview = function () {
 
 ccfp.createScoringModals = function (data) {
   var body = d3.select("body");
-  var id = "";
-  var prevId = "";
-  data.forEach(function (a) {
-    prevId = id;
-    id = a["id"];
+  data.forEach(function (a, i) {
+    var id = a["id"];
+
+    if (a["attributes"] == null) {
+      a["attributes"] = {};
+    }
+    if (a["authors"] == null) {
+      a["authors"] = {};
+    }
 
     var divId = "abstract-" + id + "-modal";
     var m = body.append("form").attr("id", "score-" + id)
@@ -182,6 +218,11 @@ ccfp.createScoringModals = function (data) {
     var mkslider = function(name, slot) {
       var domid = name.toLowerCase() + "-slider-" + id;
       var value = 50;
+
+      if (a[slot] == null) {
+        a[slot] = {};
+      }
+
       if (a[slot].hasOwnProperty(userEmail)) {
         value = a[slot][userEmail];
       }
@@ -209,6 +250,41 @@ ccfp.createScoringModals = function (data) {
     mkslider("Skill", "scores_a");
     mkslider("Quality", "scores_b");
     mkslider("Relevance", "scores_c");
+
+    // previous / next / done buttons
+    // TODO: probably a better way to do this d3-style
+    var previous = data[i - 1];
+    var pbtn = f.append("button")
+      .classed({"btn": true, "btn-default": true})
+      .attr("data-dismiss", "modal")
+      .text("< Previous");
+
+    if (typeof(previous) == "object" && previous.hasOwnProperty("id")) {
+      pbtn.attr("data-target", "#abstract-" + previous["id"] + "-modal")
+          .attr("data-id", previous["id"])
+          .attr("data-toggle", "modal");
+    } else {
+      pbtn.attr("disabled", true);
+    }
+
+    var next = data[i + 1];
+    var nbtn = f.append("button")
+      .classed({"btn": true, "btn-default": true})
+      .attr("data-dismiss", "modal")
+      .text("Next >");
+
+    if (typeof(next) == "object" && next.hasOwnProperty("id")) {
+      nbtn.attr("data-target", "#abstract-" + next["id"] + "-modal")
+          .attr("data-id", next["id"])
+          .attr("data-toggle", "modal");
+    } else {
+      nbtn.attr("disabled", true);
+    }
+
+    f.append("button")
+      .classed({"btn": true, "btn-default": true})
+      .attr("data-dismiss", "modal")
+      .text("Done");
   });
 };
 
@@ -238,7 +314,98 @@ ccfp.updateScores = function(id, sliders, divId) {
 };
 
 ccfp.newAbstractForm = function () {
+  $('#abstract-form')[0].reset();
+  $("#form-abstract-id").val("");
+  $('#abstract-form-modal-title').html("New Abstract");
   $('#abstract-form-modal').modal()
+};
+
+ccfp.setupEditForm = function (id) {
+  $('#abstract-form')[0].reset();
+
+  $.ajax({
+    url: "/abstracts/" + id,
+    dataType: "json"
+  }).done(function(data, status, xhr) {
+    $("#form-abstract-id").val(data["id"]);
+    $('#abstract-form-modal-title').html("Editing Abtract: " + data["title"]);
+    $("#body").val(data["body"]);
+    $("#title").val(data["title"]);
+
+    ["authors", "attributes"].forEach(function (a) {
+      if (data[a] == null) { data[a] = {}; }
+    });
+
+    // the backend supports multiple authors but the frontend work
+    // to expose that isn't complete. This code supports getting
+    // multiple authors by splitting into arrays that can be joined
+    // into the existing fields in the UI
+    var authors = [];
+    var emails = [];
+    for (var a in data["authors"]) {
+      if (data["authors"].hasOwnProperty(a) && data["authors"][a] != "") {
+        emails.push(a);
+        authors.push(data["authors"][a]);
+      }
+    };
+    $("#author0").val(authors.join(", "));
+    $("#email0").val(emails.join(", "));
+
+    // fields that are stored as attributes
+    ["company", "jobtitle", "bio", "picture_link", "audience"].forEach(function (key) {
+      if (data["attributes"].hasOwnProperty(key)) {
+        $("#" + key).val(data["attributes"][key]);
+      } else {
+        $("#" + key).val("");
+      }
+    });
+
+    $('#abstract-form-modal-title').html("Edit Abstract " + id);
+    $('#abstract-form-modal').modal()
+  }).fail(function(data, status, xhr) {
+    console.log("XHR fetch for abstract form failed.", data, status, xhr);
+  });
+};
+
+// for now, only support a single author field even though the
+// backend supports up to 64k
+ccfp.saveAbstractForm = function () {
+  var abs = {
+    "authors": {},
+    "attributes": {
+      "company": $("#company").val(),
+      "jobtitle": $("#jobtitle").val(),
+      "bio": $("#bio").val(),
+      "picture_link": $("#picture_link").val(),
+      "audience": $("#audience").val()
+    },
+    "title": $("#title").val(),
+    "body": $("#body").val()
+  };
+  abs["authors"][$("#email0").val()] = $("#author0").val();
+
+  // if the ID is set, that means this is an edit so pass it to the
+  // server, otherwise the field must not exist in the JSON or parsing
+  // will fail since "" is an invalid uuid
+  var method = "PUT";
+  var id = $("#form-abstract-id").val();
+  if (id.length == 36) {
+    abs["id"] = id;
+    method = "PATCH";
+  }
+
+  $.ajax({
+    url: "/abstracts/",
+    type: method,
+    data: JSON.stringify(abs),
+    dataType: "json"
+  }).done(function(data, status, xhr) {
+    ccfp.deleteOverview();
+    ccfp.renderOverview();
+    console.log("Saved to backend.", data, status, xhr);
+  }).fail(function(data, status, xhr) {
+    console.log("XHR save of abstract form failed.", data, status, xhr);
+  });
 };
 
 // persona can take a second or two to do its round trip with the
@@ -259,6 +426,29 @@ ccfp.run = function () {
 
   $('#new-abstract-link').on('click', function (e) {
     ccfp.newAbstractForm();
+  });
+
+  $('#abstract-form-submit').on('click', function (e) {
+    $("#abstract-form").validate({
+      submitHandler: ccfp.saveAbstractForm
+    });
+  });
+
+  //$("#abstract-form").validate({
+  jQuery.validator.setDefaults({
+    debug: true,
+    errorClass: 'has-error',
+    validClass: 'has-success',
+    ignore: "",
+    highlight: function (element, errorClass, validClass) {
+      $(element).closest('.form-group').addClass('has-error');
+    },
+    unhighlight: function (element, errorClass, validClass) {
+      $(element).closest('.form-group').removeClass('has-error');
+    },
+    errorPlacement: function (error, element) {
+      $(element).closest('.form-group').find('.help-block').text(error.text());
+    }
   });
 };
 
