@@ -295,32 +295,47 @@ ccfp.createScoringModals = function (data) {
       .attr("role", "form")
       .attr("id", "comment-form-" + id);
 
-    cform.append("div").classed("row", true)
+    var ctxt = cform.append("div").classed({ "row": true })
       .append("div").classed({ "col-sm-12": true, "ccfp-view": true })
       .append("textarea")
       .attr("id", "new-comment-body")
       .attr("name", "body")
       .attr("rows", 4).classed("form-control", true);
 
-/*
     var cbtn = cform.append("button")
-      .attr("id", "new-comment-save-button").classed({ "btn": true, "btn-default": true })
-      .text("Save Comment")
-      .attr("onclick", function () {
-        var bv = $("#new-comment-body").val();
-        var cd = { "abstract_id": id, "body": bv, "email": userEmail };
-        var js = JSON.stringify(cd);
-        console.log("SAVING NEW COMMENT", cd, js);
-        $.ajax({ url: "/comments/", type: "PUT", data: js, dataType: "json" })
-          .done(function (d, status, xhr) {
-            // write to new row
-          })
-          .fail(function (data, status, xhr) {
-            console.log("XHR save of abstract form failed.", data, status, xhr);
-          });
-      });
-*/
-    ccfp.populateComments(b, id);
+      .classed({ "btn": true, "btn-default": true })
+      .attr("id", "new-comment-save-button")
+      .attr("data-dismiss", "modal")
+      .text("Save Comment");
+
+    b.append("div").classed({ "row": true, "ccfp-view": true }); // spacer
+
+    // TODO: add button to hide comments, hide by default
+    var ctbl = b.append("table")
+      .classed({ "table": true, "table-striped": true, "table-hover": true, "table-condensed": true });
+    ctbl.append("tbody").attr("id", "comment-list");
+
+    // for some reason this func was firing when added with .append('onload')
+    $("#new-comment-save-button").on('click', function () {
+      cbtn.attr("disabled", true);
+      ctxt.attr("disabled", true);
+      var cb = $("#new-comment-body");
+      var cd = { "abstract_id": id, "body": cb.val(), "email": userEmail };
+      var js = JSON.stringify(cd);
+      $.ajax({ url: "/comments/", type: "PUT", data: js, dataType: "json" })
+        .done(function (d, status, xhr) {
+          ccfp.populateComments(id);
+          cb.val("");
+          ctxt.attr("disabled", null);
+          cbtn.attr("disabled", null);
+        })
+        .fail(function (data, status, xhr) {
+          console.log("XHR save of abstract form failed.", data, status, xhr);
+        });
+      return false;
+    });
+
+    ccfp.populateComments(id);
 
     // previous / next / done buttons
     // TODO: probably a better way to do this d3-style
@@ -381,15 +396,24 @@ ccfp.updateScores = function (id, sliders, divId) {
     });
 };
 
-ccfp.populateComments = function (b, id) {
-  console.log("populateComments");
+ccfp.populateComments = function (id) {
+  console.log("populateComments", id);
   $.ajax({ url: "/comments/" + id, type: "GET", dataType: "json" })
     .done(function (data, status, xhr) {
-      var crows = b.selectAll("div")
+      data.reverse();
+      var tbody = d3.select("#comment-list");
+      tbody.selectAll("tr").remove(); // clear
+      var cmt = tbody.selectAll("tr")
         .data(data)
         .enter()
-        .append("div").classed({ "row": true, "ccfp-view": true });
+        .append("tr");
 
+      cmt.append("td").html(function (d) {
+          var dt = new Date(d["created"]);
+          return d["email"] + "<br/><small>" + dt.toLocaleString() + "</small>";
+      });
+      cmt.append("td").attr("style", "word-break:break-all;")
+        .text(function (d) { return d["body"]; });
     })
     .fail(function (data, status, xhr) {
       console.log("XHR failed.", data, status, xhr);
