@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * requires: jQuery and D3
+ * requires: jQuery, D3, and some plugins, see index.html at the bottom
+ *
+ * I'm not proud of this but it works. If I had it to do over again I
+ * go with a pipline something like Go <-> angular <-> D3 <-> UI so that
+ * angular can handle all the reactive / data change complexity, with
+ * D3 still doing all the drawing because I like it for building pages
+ * procedurally on top of Bootstrap's sensible defaults.
  */
 var ccfp = ccfp || {};
 
@@ -231,7 +237,7 @@ ccfp.createScoringModals = function (data) {
       .append("div").classed({ "col-sm-12": true, "ccfp-view": true })
       .append("textarea").classed("form-control", true)
       .attr("disabled", true)
-      .attr("rows", 8)
+      .attr("rows", 4)
       .text(a["attributes"]["bio"]);
 
     mkrow("Abstract", "");
@@ -397,7 +403,6 @@ ccfp.updateScores = function (id, sliders, divId) {
 };
 
 ccfp.populateComments = function (id) {
-  console.log("populateComments", id);
   $.ajax({ url: "/comments/" + id, type: "GET", dataType: "json" })
     .done(function (data, status, xhr) {
       data.reverse();
@@ -527,6 +532,11 @@ ccfp.run = function () {
     .fail(function (xhr, status, err) {
       console.log("XHR failed: " + status);
     });
+
+  $('#overview-refresh-button').on('click', function (e) {
+      ccfp.deleteOverview();
+      ccfp.renderOverview();
+  });
 
   $('#new-abstract-link').on('click', function (e) {
     ccfp.newAbstractForm();
