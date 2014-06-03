@@ -304,14 +304,13 @@ ccfp.createScoringModals = function (data) {
     var ctxt = cform.append("div").classed({ "row": true })
       .append("div").classed({ "col-sm-12": true, "ccfp-view": true })
       .append("textarea")
-      .attr("id", "new-comment-body")
+      .attr("id", "new-comment-body-" + id)
       .attr("name", "body")
       .attr("rows", 4).classed("form-control", true);
 
     var cbtn = cform.append("button")
       .classed({ "btn": true, "btn-default": true })
-      .attr("id", "new-comment-save-button")
-      .attr("data-dismiss", "modal")
+      .attr("id", "new-comment-save-" + id)
       .text("Save Comment");
 
     b.append("div").classed({ "row": true, "ccfp-view": true }); // spacer
@@ -319,17 +318,18 @@ ccfp.createScoringModals = function (data) {
     // TODO: add button to hide comments, hide by default
     var ctbl = b.append("table")
       .classed({ "table": true, "table-striped": true, "table-hover": true, "table-condensed": true });
-    ctbl.append("tbody").attr("id", "comment-list");
+    ctbl.append("tbody").attr("id", "comment-list-" + id);
 
     // for some reason this func was firing when added with .append('onload')
-    $("#new-comment-save-button").on('click', function () {
+    $("#new-comment-save-" + id).on('click', function () {
       cbtn.attr("disabled", true);
       ctxt.attr("disabled", true);
-      var cb = $("#new-comment-body");
+      var cb = $("#new-comment-body-" + id);
       var cd = { "abstract_id": id, "body": cb.val(), "email": userEmail };
       var js = JSON.stringify(cd);
       $.ajax({ url: "/comments/", type: "PUT", data: js, dataType: "json" })
         .done(function (d, status, xhr) {
+          console.log("Response from PUT /comments/: ", status, d);
           ccfp.populateComments(id);
           cb.val("");
           ctxt.attr("disabled", null);
@@ -406,7 +406,7 @@ ccfp.populateComments = function (id) {
   $.ajax({ url: "/comments/" + id, type: "GET", dataType: "json" })
     .done(function (data, status, xhr) {
       data.reverse();
-      var tbody = d3.select("#comment-list");
+      var tbody = d3.select("#comment-list-" + id);
       tbody.selectAll("tr").remove(); // clear
       var cmt = tbody.selectAll("tr")
         .data(data)
