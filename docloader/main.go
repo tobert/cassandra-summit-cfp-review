@@ -20,6 +20,8 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/gocql/gocql"
 	"io/ioutil"
@@ -45,10 +47,14 @@ var fields []string = []string{
 }
 
 func main() {
-	fname := os.Args[1]
-	buf, err := ioutil.ReadFile(fname)
+	fileFlag := flag.String("file", "", "input filename to read")
+	writeCassFlag := flag.Bool("cass", false, "enable writing to Cassandra")
+	writeJsonFlag := flag.Bool("json", false, "dump JSON to stdout")
+	flag.Parse()
+
+	buf, err := ioutil.ReadFile(*fileFlag)
 	if err != nil {
-		log.Fatalf("Failed to read file '%s': %s\n", fname, err)
+		log.Fatalf("Failed to read file '%s': %s\n", *fileFlag, err)
 	}
 
 	// replace the funky 6-byte apostrophe that is not utf8 or ASCII
@@ -139,21 +145,28 @@ func main() {
 		fmt.Printf("Bad Key at line %s: '%s'\n", v, k)
 	}
 
-	// connect to Cassandra
-	cluster := gocql.NewCluster("127.0.0.1")
-	cluster.Keyspace = "ccfp"
-	cluster.Consistency = gocql.Quorum
+	if *writeCassFlag {
+		cluster := gocql.NewCluster("127.0.0.1")
+		cluster.Keyspace = "ccfp"
+		cluster.Consistency = gocql.Quorum
 
-	cass, err := cluster.CreateSession()
-	if err != nil {
-		panic(fmt.Sprintf("Error creating Cassandra session: %v", err))
-	}
-	defer cass.Close()
-
-	for _, a := range abstracts {
-		err = a.Save(cass)
+		cass, err := cluster.CreateSession()
 		if err != nil {
-			log.Printf("Failed to save record: %s\n", err)
+			panic(fmt.Sprintf("Error creating Cassandra session: %v", err))
 		}
+		defer cass.Close()
+
+		for _, a := range abstracts {
+			err = a.Save(cass)
+			if err != nil {
+				log.Printf("Failed to save record: %s\n", err)
+			}
+		}
+	} else if *writeJsonFlag {
+		js, err := json.MarshalIndent(abstracts, "", "  ")
+		if err != nil {
+			log.Fatalf("Failed to encode sdata as JSON: %s\n", err)
+		}
+		os.Stdout.Write(js)
 	}
 }
