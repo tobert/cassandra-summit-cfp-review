@@ -28,7 +28,6 @@ ccfp.scores_fields = ["scores_a", "scores_b", "scores_c", "scores_d", "scores_e"
 // needs to match the table structure in index.html
 ccfp.table_fields = [
   "authors", "title", "scores_a", "scores_b", "scores_c",
-  "scores_a-avg", "scores_b-avg", "scores_c-avg",
   "score-link", "edit-link"
 ];
 
@@ -55,8 +54,7 @@ ccfp.computeStats = function (data) {
     numAbstracts++;
     var curr = {};
 
-    // make sure all table fields are defined so D3 can set up
-    // the rows properly
+    // make sure all table fields are defined so D3 can set up the rows properly
     ccfp.table_fields.map(function (f) {
       curr[f] = null;
     });
