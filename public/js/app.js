@@ -96,7 +96,7 @@ ccfp.computeStats = function (data) {
       if (curr[count_field] == 0) {
         curr[avg_field] = 0;
       } else {
-        curr[avg_field] = curr[total_field] / curr[count_field];
+        curr[avg_field] = Math.floor(curr[total_field] / curr[count_field]);
       }
     });
 
