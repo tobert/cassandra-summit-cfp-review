@@ -247,8 +247,8 @@ ccfp.createScoringModals = function (data) {
       .text(a["body"]);
 
     var sliders = [];
-    var mkslider = function (name, slot) {
-      var domid = name.toLowerCase() + "-slider-" + id;
+    var mkslider = function (name, domname, slot) {
+      var domid = domname + "-slider-" + id;
       var value = 50;
 
       if (a[slot] == null) {
@@ -289,9 +289,9 @@ ccfp.createScoringModals = function (data) {
     };
 
     b.append("hr");
-    mkslider("Skill", "scores_a");
-    mkslider("Quality", "scores_b");
-    mkslider("Relevance", "scores_c");
+    mkslider("Skill of Speaker", "skill", "scores_a");
+    mkslider("Quality of Abstract", "quality", "scores_b");
+    mkslider("Relevance or Talk", "relevance", "scores_c");
     b.append("hr");
 
     mkrow("Comment (optional)", "");
