@@ -306,7 +306,7 @@ ccfp.createScoringModals = function (data) {
     b.append("hr");
     mkslider("Skill of Speaker", "skill", "scores_a");
     mkslider("Quality of Abstract", "quality", "scores_b");
-    mkslider("Relevance or Talk", "relevance", "scores_c");
+    mkslider("Relevance of Talk", "relevance", "scores_c");
     b.append("hr");
 
     mkrow("Comment (optional)", "");
