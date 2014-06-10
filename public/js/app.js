@@ -175,7 +175,7 @@ ccfp.renderOverview = function () {
         $("#overview-table").tablesorter();
     })
     .fail(function (xhr, status, err) {
-      console.log(err);
+      alert("XHR failed: please email atobey@datastax.com: " + status);
       console.log("XHR failed: " + status);
     });
 };
@@ -334,7 +334,10 @@ ccfp.createScoringModals = function (data) {
     ctbl.append("tbody").attr("id", "comment-list-" + id);
 
     // for some reason this func was firing when added with .append('onload')
-    $("#new-comment-save-" + id).on('click', function () {
+    var save_comment = function () {
+      if (cb.val().length == 0) {
+        return false;
+      }
       cbtn.attr("disabled", true);
       ctxt.attr("disabled", true);
       var cb = $("#new-comment-body-" + id);
@@ -349,10 +352,12 @@ ccfp.createScoringModals = function (data) {
           cbtn.attr("disabled", null);
         })
         .fail(function (data, status, xhr) {
+          alert("XHR failed: please email atobey@datastax.com");
           console.log("XHR save of abstract form failed.", data, status, xhr);
         });
       return false;
-    });
+    };
+    $("#new-comment-save-" + id).on('click', save_comment);
 
     ccfp.populateComments(id);
 
@@ -360,6 +365,7 @@ ccfp.createScoringModals = function (data) {
     // TODO: probably a better way to do this d3-style
     var previous = data[i - 1];
     var pbtn = f.append("button").classed({ "btn": true, "btn-default": true })
+      .attr("id", "review-abstract-prev-" + id)
       .attr("data-dismiss", "modal")
       .text("< Previous");
 
@@ -373,6 +379,7 @@ ccfp.createScoringModals = function (data) {
 
     var next = data[i + 1];
     var nbtn = f.append("button").classed({ "btn": true, "btn-default": true })
+      .attr("id", "review-abstract-next-" + id)
       .attr("data-dismiss", "modal")
       .text("Next >");
 
@@ -385,8 +392,13 @@ ccfp.createScoringModals = function (data) {
     }
 
     f.append("button").classed({ "btn": true, "btn-default": true })
+      .attr("id", "review-abstract-done-" + id)
       .attr("data-dismiss", "modal")
       .text("Done");
+
+    $("review-abstract-done-" + id).on('click', save_comment);
+    $("review-abstract-prev-" + id).on('click', save_comment);
+    $("review-abstract-next-" + id).on('click', save_comment);
   });
 };
 
@@ -434,6 +446,7 @@ ccfp.populateComments = function (id) {
         .text(function (d) { return d["body"]; });
     })
     .fail(function (data, status, xhr) {
+      alert("XHR failed: please email atobey@datastax.com");
       console.log("XHR failed.", data, status, xhr);
     });
 };
@@ -489,6 +502,7 @@ ccfp.setupEditForm = function (id) {
       $('#abstract-form-modal').modal()
     })
     .fail(function (data, status, xhr) {
+      alert("XHR failed: please email atobey@datastax.com");
       console.log("XHR fetch for abstract form failed.", data, status, xhr);
     });
 };
@@ -527,6 +541,7 @@ ccfp.saveAbstractForm = function () {
       console.log("Saved to backend.", data, status, xhr);
     })
     .fail(function (data, status, xhr) {
+      alert("XHR failed: please email atobey@datastax.com");
       console.log("XHR save of abstract form failed.", data, status, xhr);
     });
 };
@@ -543,6 +558,7 @@ ccfp.run = function () {
       ccfp.renderOverview();
     })
     .fail(function (xhr, status, err) {
+      alert("XHR failed: please email atobey@datastax.com");
       console.log("XHR failed: " + status);
     });
 
