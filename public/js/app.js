@@ -67,6 +67,14 @@ ccfp.computeStats = function (data) {
     // if one score is set, assume the user set all scores
     if (a["scores_a"] != null && a["scores_a"].hasOwnProperty(userEmail)) {
       numScored++;
+
+      // count up how many people have already scored this abstract
+      curr["number_of_scores"] = 0;
+      for (user in a["scores_a"]) {
+        if (a["scores_a"].hasOwnProperty(user)) {
+          curr["number_of_scores"]++;
+        }
+      }
     }
 
     curr["authors"] = ccfp.formatAuthors(a);
@@ -79,11 +87,13 @@ ccfp.computeStats = function (data) {
       curr[total_field] = 0;
       curr[count_field] = 0;
 
-      for (key in a[field]) { // abstract/scores_a
-        if (a[field].hasOwnProperty(key)) { // abstract/scores_a/email
+      for (email in a[field]) { // abstract/scores_a
+        if (a[field].hasOwnProperty(email)) { // abstract/scores_a/email
           curr[count_field]++;
-          curr[total_field] += a[field][key] || 0;
-          curr[field] = a[field][key] || 0; // current user's entry
+          curr[total_field] += a[field][email] || 0;
+          if (email == userEmail) {
+            curr[field] = a[field][email]; // current user's entry
+          }
         }
       }
     });
@@ -125,6 +135,7 @@ ccfp.renderOverview = function () {
       tr.selectAll("td")
         .data(function (d) {
           return ccfp.table_fields.map(function (f) {
+            // 0: value, 1: record, 2: field name
             return [d[f], d, f];
           });
         })
@@ -161,6 +172,7 @@ ccfp.renderOverview = function () {
         .text("edit");
     })
     .fail(function (xhr, status, err) {
+      console.log(err);
       console.log("XHR failed: " + status);
     });
 };
