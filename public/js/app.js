@@ -171,6 +171,8 @@ ccfp.renderOverview = function () {
         .append("a")
         .attr("href", "#")
         .text("edit");
+
+        $("#overview-table").tablesorter();
     })
     .fail(function (xhr, status, err) {
       console.log(err);
