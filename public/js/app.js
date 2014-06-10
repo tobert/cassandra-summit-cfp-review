@@ -27,7 +27,7 @@ ccfp.scores_fields = ["scores_a", "scores_b", "scores_c", "scores_d", "scores_e"
 
 // needs to match the table structure in index.html
 ccfp.table_fields = [
-  "authors", "title", "company", "scores_a", "scores_b", "scores_c",
+  "authors", "title", "company", "reviews", "scores_a", "scores_b", "scores_c",
   "score-link", "edit-link"
 ];
 
@@ -67,18 +67,18 @@ ccfp.computeStats = function (data) {
     // if one score is set, assume the user set all scores
     if (a["scores_a"] != null && a["scores_a"].hasOwnProperty(userEmail)) {
       numScored++;
-
-      // count up how many people have already scored this abstract
-      curr["number_of_scores"] = 0;
-      for (user in a["scores_a"]) {
-        if (a["scores_a"].hasOwnProperty(user)) {
-          curr["number_of_scores"]++;
-        }
-      }
     }
 
     curr["authors"] = ccfp.formatAuthors(a);
     curr["company"] = a["attributes"]["company"] || "Unknown";
+
+    // count up how many people have already scored this abstract
+    curr["reviews"] = 0;
+    for (user in a["scores_a"]) {
+      if (a["scores_a"].hasOwnProperty(user)) {
+        curr["reviews"]++;
+      }
+    }
 
     // total all of the score fields across reviewers
     ccfp.scores_fields.forEach(function (field) {
