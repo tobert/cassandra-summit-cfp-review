@@ -27,7 +27,7 @@ ccfp.scores_fields = ["scores_a", "scores_b", "scores_c", "scores_d", "scores_e"
 
 // needs to match the table structure in index.html
 ccfp.table_fields = [
-  "authors", "title", "scores_a", "scores_b", "scores_c",
+  "authors", "title", "company", "scores_a", "scores_b", "scores_c",
   "score-link", "edit-link"
 ];
 
@@ -78,6 +78,7 @@ ccfp.computeStats = function (data) {
     }
 
     curr["authors"] = ccfp.formatAuthors(a);
+    curr["company"] = a["attributes"]["company"] || "Unknown";
 
     // total all of the score fields across reviewers
     ccfp.scores_fields.forEach(function (field) {
