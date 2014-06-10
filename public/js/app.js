@@ -333,32 +333,6 @@ ccfp.createScoringModals = function (data) {
       .classed({ "table": true, "table-striped": true, "table-hover": true, "table-condensed": true });
     ctbl.append("tbody").attr("id", "comment-list-" + id);
 
-    // for some reason this func was firing when added with .append('onload')
-    var save_comment = function () {
-      if (cb.val().length == 0) {
-        return false;
-      }
-      cbtn.attr("disabled", true);
-      ctxt.attr("disabled", true);
-      var cb = $("#new-comment-body-" + id);
-      var cd = { "abstract_id": id, "body": cb.val(), "email": userEmail };
-      var js = JSON.stringify(cd);
-      $.ajax({ url: "/comments/", type: "PUT", data: js, dataType: "json" })
-        .done(function (d, status, xhr) {
-          console.log("Response from PUT /comments/: ", status, d);
-          ccfp.populateComments(id);
-          cb.val("");
-          ctxt.attr("disabled", null);
-          cbtn.attr("disabled", null);
-        })
-        .fail(function (data, status, xhr) {
-          alert("XHR failed: please email atobey@datastax.com");
-          console.log("XHR save of abstract form failed.", data, status, xhr);
-        });
-      return false;
-    };
-    $("#new-comment-save-" + id).on('click', save_comment);
-
     ccfp.populateComments(id);
 
     // previous / next / done buttons
@@ -396,9 +370,36 @@ ccfp.createScoringModals = function (data) {
       .attr("data-dismiss", "modal")
       .text("Done");
 
-    $("review-abstract-done-" + id).on('click', save_comment);
-    $("review-abstract-prev-" + id).on('click', save_comment);
-    $("review-abstract-next-" + id).on('click', save_comment);
+    // for some reason this func was firing when added with .append('onload')
+    var save_comment = function () {
+      cbtn.attr("disabled", true);
+      ctxt.attr("disabled", true);
+      var cb = $("#new-comment-body-" + id);
+      var cd = { "abstract_id": id, "body": cb.val(), "email": userEmail };
+      var js = JSON.stringify(cd);
+      if (cb.val().length == 0) {
+        console.log("ignoring event becuase cb.val() is empty:", cb.val());
+        return true;
+      }
+      $.ajax({ url: "/comments/", type: "PUT", data: js, dataType: "json" })
+        .done(function (d, status, xhr) {
+          console.log("Response from PUT /comments/: ", status, d);
+          ccfp.populateComments(id);
+          cb.val("");
+          ctxt.attr("disabled", null);
+          cbtn.attr("disabled", null);
+        })
+        .fail(function (data, status, xhr) {
+          alert("XHR failed: please email atobey@datastax.com");
+          console.log("XHR save of abstract form failed.", data, status, xhr);
+        });
+      return true;
+    };
+
+    $("#new-comment-save-" + id).on('click', save_comment);
+    $("#review-abstract-done-" + id).on('click', save_comment);
+    $("#review-abstract-prev-" + id).on('click', save_comment);
+    $("#review-abstract-next-" + id).on('click', save_comment);
   });
 };
 
