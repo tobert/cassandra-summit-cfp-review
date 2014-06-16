@@ -28,18 +28,29 @@ ccfp.scores_fields = ["scores_a", "scores_b", "scores_c", "scores_d", "scores_e"
 // needs to match the table structure in index.html
 ccfp.table_fields = [
   "authors", "title", "company", "reviews", "scores_a", "scores_b", "scores_c",
+  "scores_a-avg", "scores_b-avg", "scores_c-avg",
   "score-link", "edit-link"
 ];
 
+ccfp.csv_fields = [
+  "names", "emails", "title", "company", "reviews",
+  "scores_a-avg", "scores_b-avg", "scores_c-avg"
+];
+
 // flatten the authors map to a comma-separated list
-ccfp.formatAuthors = function (item) {
+ccfp.formatAuthors = function (item, sep) {
   var authors = [];
+  var emails = [];
   for (key in item["authors"]) {
     if (item["authors"].hasOwnProperty(key)) {
       authors.push(item["authors"][key]);
+      emails.push(key);
     }
   }
-  return authors.join(", ");
+  return {
+    "names": authors.join(sep),
+    "emails": emails.join(sep)
+  };
 }
 
 // goes over the raw abstract data and gets some stats useful for displaying
@@ -48,6 +59,7 @@ ccfp.computeStats = function (data) {
   var numAbstracts = 0;
   var numScored = 0;
   var absStats = [];
+  var csvdata = [];
 
   data.forEach(function (a) {
     var id = a["id"];
@@ -69,8 +81,14 @@ ccfp.computeStats = function (data) {
       numScored++;
     }
 
-    curr["authors"] = ccfp.formatAuthors(a);
+    var authors = ccfp.formatAuthors(a, ", ");
+    curr["authors"] = authors["names"];
     curr["company"] = a["attributes"]["company"] || "Unknown";
+
+    // again but formatted for safe CSV export
+    authors = ccfp.formatAuthors(a, ";");
+    curr["emails"] = authors["emails"];
+    curr["names"] = authors["names"];
 
     // count up how many people have already scored this abstract
     curr["reviews"] = 0;
@@ -90,10 +108,14 @@ ccfp.computeStats = function (data) {
 
       for (email in a[field]) { // abstract/scores_a
         if (a[field].hasOwnProperty(email)) { // abstract/scores_a/email
+          // ignore empty fields and scores of 50 (hack)
+          if (a[field][email] == undefined || a[field][email] == 50) {
+            continue;
+          }
           curr[count_field]++;
           curr[total_field] += a[field][email] || 0;
           if (email == userEmail) {
-            curr[field] = a[field][email]; // current user's entry
+            curr[field] = a[field][email]; // current logged in user's score
           }
         }
       }
@@ -112,7 +134,16 @@ ccfp.computeStats = function (data) {
     });
 
     absStats.push(curr);
+
+    // create a flat row for CSV export
+    var csvrow = [];
+    ccfp.csv_fields.forEach(function (field, j) {
+      csvrow[j] = curr[field];
+    });
+    csvdata.push(csvrow);
   });
+
+  ccfp.csv = csvdata;
 
   return {
     total: numAbstracts,
@@ -124,11 +155,13 @@ ccfp.computeStats = function (data) {
 ccfp.renderOverview = function () {
   $.ajax({ url: '/abstracts/', dataType: "json" })
     .done(function (data, status, xhr) {
-      stats = ccfp.computeStats(data);
+      ccfp.stats = ccfp.computeStats(data);
+      console.log("Raw Data:", data);
+      console.log("Computed Stats:", ccfp.stats);
       // create a row for each abstract
       var tr = d3.select("#overview-tbody")
         .selectAll("tr")
-        .data(stats.abstracts, function (d) { return d["id"]; })
+        .data(ccfp.stats.abstracts, function (d) { return d["id"]; })
         .enter()
         .append("tr");
 
@@ -238,7 +271,8 @@ ccfp.createScoringModals = function (data) {
         .html(value);
     };
 
-    mkrow("Author(s)", ccfp.formatAuthors(a));
+    var authors = ccfp.formatAuthors(a, ", ");
+    mkrow("Author(s)", authors["names"]);
     mkrow("Company", a["attributes"]["company"]);
     mkrow("Job Title", a["attributes"]["jobtitle"]);
     mkrow("Picture Link",
@@ -547,6 +581,22 @@ ccfp.saveAbstractForm = function () {
     });
 };
 
+ccfp.enableCSVExportLinks = function () {
+    d3.select("#action-menu")
+      .append("li")
+      .append("a")
+      .attr("download", "abstracts.csv")
+      .attr("id", "export-csv-link")
+      .attr("href", "#")
+      .text("Download CSV");
+
+    $("#export-csv-link").on('click', function () {
+      d3.select("#export-csv-link").attr("href",
+        "data:text/plain;charset=UTF-8," +
+        encodeURIComponent(d3.csv.formatRows(ccfp.csv)));
+    });
+};
+
 // persona can take a second or two to do its round trip with the
 // server, so rather than doing setup with $(document).ready, put
 // that code in run() and let the persona setup call it.
@@ -577,6 +627,12 @@ ccfp.run = function () {
       submitHandler: ccfp.saveAbstractForm
     });
   });
+
+  // dirty hack, insecure, but whatever people can get this data anyways
+  // something to fix before EU ...
+  if (userEmail == "brady@datastax.com" || userEmail == "atobey@datastax.com") {
+    ccfp.enableCSVExportLinks();
+  }
 
   jQuery.validator.setDefaults({
     debug: true,
