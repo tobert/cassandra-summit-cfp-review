@@ -34,7 +34,8 @@ ccfp.table_fields = [
 
 ccfp.csv_fields = [
   "names", "emails", "title", "company", "reviews",
-  "scores_a-avg", "scores_b-avg", "scores_c-avg"
+  "scores_a-avg", "scores_b-avg", "scores_c-avg",
+  "jobtitle", "picture_link", "bio", "audience"
 ];
 
 // flatten the authors map to a comma-separated list
@@ -84,6 +85,11 @@ ccfp.computeStats = function (data) {
     var authors = ccfp.formatAuthors(a, ", ");
     curr["authors"] = authors["names"];
     curr["company"] = a["attributes"]["company"] || "Unknown";
+    // flatten attributes to make CSV export easier
+    curr["jobtitle"] = a["attributes"]["jobtitle"];
+    curr["picture_link"] = a["attributes"]["picture_link"];
+    curr["bio"] = a["attributes"]["bio"];
+    curr["audience"] = a["attributes"]["audience"];
 
     // again but formatted for safe CSV export
     authors = ccfp.formatAuthors(a, ";");
