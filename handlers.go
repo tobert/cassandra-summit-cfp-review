@@ -50,6 +50,7 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 		alist, err := ListAbstracts(cass)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Failed to list abstracts: %s", err), 500)
+			return
 		}
 		jsonOut(w, r, alist)
 		return
@@ -57,6 +58,7 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("AbstractsHandler/PUT invalid json data: %s", err)
 			http.Error(w, fmt.Sprintf("AbstractsHandler/PUT invalid json data: %s", err), 500)
+			return
 		}
 
 		a.Id = gocql.TimeUUID()
@@ -65,6 +67,7 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("AbstractsHandler/PATCH invalid json data: %s", err)
 			http.Error(w, fmt.Sprintf("AbstractsHandler/PATCH invalid json data: %s", err), 500)
+			return
 		}
 	default:
 		http.Error(w, fmt.Sprintf("method '%s' not implemented", r.Method), 500)
@@ -82,6 +85,7 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("AbstractsHandler/%s a.Save() failed: %s", r.Method, err)
 		http.Error(w, fmt.Sprintf("AbstractsHandler/%s a.Save() failed: %s", r.Method, err), 500)
+		return
 	}
 
 	jsonOut(w, r, a)
@@ -96,6 +100,7 @@ func AbstractHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := gocql.ParseUUID(vars["id"])
 	if err != nil {
 		http.Error(w, fmt.Sprintf("could not parse uuid: '%s'", err), 500)
+		return
 	}
 	a, _ := GetAbstract(cass, id)
 	jsonOut(w, r, a)
@@ -111,12 +116,14 @@ func ScoreUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("invalid score update json: %s\n", err)
 		http.Error(w, fmt.Sprintf("invalid score update json: %s", err), 500)
+		return
 	}
 
 	err = scores.Save(cass)
 	if err != nil {
 		log.Printf("score update failed: %s\n", err)
 		http.Error(w, fmt.Sprintf("score update failed: %s", err), 500)
+		return
 	}
 
 	jsonOut(w, r, scores)
@@ -149,6 +156,7 @@ func CommentsHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("CommentsHandler/%s invalid json data: %s", r.Method, err)
 			http.Error(w, fmt.Sprintf("CommentsHandler/%s invalid json data: %s", r.Method, err), 500)
+			return
 		}
 	} else {
 		http.Error(w, fmt.Sprintf("method '%s' not implemented", r.Method), 500)
@@ -169,6 +177,7 @@ func CommentsHandler(w http.ResponseWriter, r *http.Request) {
 	err := c.Save(cass)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("CommentHandler c.Save() failed: %s", err), 500)
+		return
 	}
 
 	jsonOut(w, r, c)

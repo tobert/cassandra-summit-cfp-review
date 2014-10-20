@@ -97,7 +97,7 @@ func (cs *CQLStore) Save(r *http.Request, w http.ResponseWriter, sess *sessions.
 	err = cs.save(sess)
 	if err != nil {
 		log.Printf("cqlstore: Failed to save session to Cassandra: %s\n", err)
-		return
+		return err
 	}
 
 	blob, err := securecookie.EncodeMulti(sess.Name(), sess.ID, cs.Codecs...)

@@ -39,10 +39,14 @@ type AuthResp struct {
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Enter: LoginHandler()\n")
 	auth, err := verifyAssertion(r.FormValue("assertion"))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to check auth assertion: %s", err), 500)
+		return
 	}
+
+	log.Printf("LoginHandler: auth.Status == '%s'\n", auth.Status)
 
 	if auth.Status == "okay" {
 		// set up an auth session and save it to Cassandra
@@ -54,12 +58,15 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		sess.Save(r, w)
 		jsonOut(w, r, auth)
 	} else {
-
-		http.Error(w, fmt.Sprintf("Authenticaiton failed: %s", err), 400)
+		http.Error(w, fmt.Sprintf("Authentication failed: %s", err), 400)
+		return
 	}
+
+	log.Printf("Exit: LoginHandler()\n")
 }
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Enter: LogoutHandler()\n")
 	sess, err := store.Get(r, sessCookie)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to read cookie: %s\n", err), 500)
@@ -68,6 +75,8 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to delete session: %s\n", err), 500)
 	}
+
+	log.Printf("Exit: LogoutHandler()\n")
 }
 
 func verifyAssertion(assertion string) (auth AuthResp, err error) {
@@ -75,16 +84,23 @@ func verifyAssertion(assertion string) (auth AuthResp, err error) {
 
 	resp, err := http.PostForm("https://verifier.login.persona.org/verify", params)
 	if err != nil {
+		log.Printf("auth request to https://verifier.login.persona.org/verify failed: %s\n", err)
 		return
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		log.Printf("Failed to read POST data: %s\n", err)
 		return
 	}
 
 	err = json.Unmarshal(body, &auth)
+	if err != nil {
+		log.Printf("Failed to unmarshal JSON data: %s\n", err)
+	}
+
+	log.Printf("Response: %+v\n", auth)
 
 	return
 }
