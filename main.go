@@ -27,23 +27,24 @@ import (
 	"net/http"
 )
 
-
-const sessCookie string = "cfpeu2014"
-const audience string = "localhost:8080"
-
-var privKey []byte = []byte("2213AA86-CEB4-48FA-A65B-4AC37687131E")
+var privKey []byte
 var store *CQLStore
-var addrFlag, cqlFlag, ksFlag string
+var addrFlag, cqlFlag, ksFlag, sessCookie, audience, keyFlag string
 var cass *gocql.Session
 
 func init() {
 	flag.StringVar(&addrFlag, "addr", ":8080", "IP:PORT or :PORT address to listen on")
 	flag.StringVar(&cqlFlag, "cql", "127.0.0.1", "IP or IP:port of the Cassandra CQL service")
-	flag.StringVar(&ksFlag, "ks", "ccfp", "keyspace containing the f7u12 schema")
+	flag.StringVar(&ksFlag, "ks", "ccfp", "keyspace containing the ccfp schema")
+	flag.StringVar(&sessCookie, "cookie", "summitcfp", "the name of the cookie, publicly visible")
+	flag.StringVar(&audience, "audience", "localhost:8080", "the domain:port value for 'audience' in Mozilla Persona")
+	flag.StringVar(&keyFlag, "key", "INSECURE", "a private key for encrypted session storage")
 }
 
 func main() {
 	flag.Parse()
+	privKey = []byte(keyFlag)
+
 	// connect to Cassandra
 	cluster := gocql.NewCluster(cqlFlag)
 	cluster.Keyspace = ksFlag
@@ -61,6 +62,7 @@ func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", RootHandler)
+	r.HandleFunc("/index.html", RootHandler)
 	r.HandleFunc("/abstracts/", AbstractsHandler)
 	r.HandleFunc("/abstracts/{id:[-a-f0-9]+}", AbstractHandler)
 	r.HandleFunc("/comments/", CommentsHandler)
@@ -69,7 +71,11 @@ func main() {
 	r.HandleFunc("/login", LoginHandler)
 	r.HandleFunc("/logout", LogoutHandler)
 
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")))
+	fs := http.FileServer(http.Dir("./public/"))
+	r.PathPrefix("/js").Handler(fs)
+	r.PathPrefix("/css").Handler(fs)
+	r.PathPrefix("/fonts").Handler(fs)
+	r.PathPrefix("/img").Handler(fs)
 
 	http.Handle("/", r)
 
