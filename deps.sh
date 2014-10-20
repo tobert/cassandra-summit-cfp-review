@@ -3,7 +3,8 @@
 set -e
 set -x
 
-go get github.com/gocql/gocql
-go get github.com/gorilla/securecookie
-go get github.com/gorilla/sessions
+go get -u github.com/gocql/gocql
+go get -u github.com/gorilla/securecookie
+go get -u github.com/gorilla/sessions
+go get -u github.com/gorilla/mux
 
