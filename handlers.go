@@ -180,7 +180,7 @@ func checkAuth(w http.ResponseWriter, r *http.Request) bool {
 	log.Println("checkAuth()")
 	sess, err := store.Get(r, sessCookie)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to read cookie: %s\n", err), 400)
+		log.Printf("failed to read cookie: %s\n", err)
 		return false
 	}
 
