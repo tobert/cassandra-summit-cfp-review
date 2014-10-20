@@ -20,24 +20,33 @@ package main
  */
 
 import (
+	"flag"
 	"fmt"
 	"github.com/gocql/gocql"
 	"github.com/gorilla/mux"
 	"net/http"
 )
 
-var cass *gocql.Session
-var store *CQLStore
 
-const sessCookie string = "cfp2014"
+const sessCookie string = "cfpeu2014"
 const audience string = "localhost:8080"
 
 var privKey []byte = []byte("2213AA86-CEB4-48FA-A65B-4AC37687131E")
+var store *CQLStore
+var addrFlag, cqlFlag, ksFlag string
+var cass *gocql.Session
+
+func init() {
+	flag.StringVar(&addrFlag, "addr", ":8080", "IP:PORT or :PORT address to listen on")
+	flag.StringVar(&cqlFlag, "cql", "127.0.0.1", "IP or IP:port of the Cassandra CQL service")
+	flag.StringVar(&ksFlag, "ks", "ccfp", "keyspace containing the f7u12 schema")
+}
 
 func main() {
+	flag.Parse()
 	// connect to Cassandra
-	cluster := gocql.NewCluster("127.0.0.1")
-	cluster.Keyspace = "ccfp"
+	cluster := gocql.NewCluster(cqlFlag)
+	cluster.Keyspace = ksFlag
 	cluster.Consistency = gocql.Quorum
 
 	var err error
@@ -64,5 +73,5 @@ func main() {
 
 	http.Handle("/", r)
 
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(addrFlag, nil)
 }
