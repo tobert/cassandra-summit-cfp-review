@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Albert P. Tobey <atobey@datastax.com> @AlTobey
+ * Copyright 2015 Albert P. Tobey <atobey@datastax.com> @AlTobey
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ $( document ).ready(function() {
 
   $('#login').on('click', function (e) {
     navigator.id.request({
-      siteName: 'Cassandra Summit 2014 CFP Review',
+      siteName: 'Cassandra Summit 2015 CFP Review',
       returnTo: '/',
       oncancel: function() { alert('user refuses to share identity.'); }
     });
