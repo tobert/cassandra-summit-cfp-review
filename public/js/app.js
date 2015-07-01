@@ -27,8 +27,8 @@ ccfp.scores_fields = ["scores_a", "scores_b", "scores_c", "scores_d", "scores_e"
 
 // needs to match the table structure in index.html
 ccfp.table_fields = [
-  "authors", "title", "company", "reviews", "scores_a", "scores_b", "scores_c",
-  "scores_a-avg", "scores_b-avg", "scores_c-avg",
+  "authors", "title", "company", "reviews", "scores_a", "scores_b",
+  "scores_a-avg", "scores_b-avg",
   "score-link", "edit-link"
 ];
 
