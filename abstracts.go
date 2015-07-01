@@ -31,16 +31,19 @@ type Email string
 type Score float32
 type Authors map[Email]string
 type Scores map[Email]Score
-type Attrs map[string]string
 
 type Abstract struct {
-	Id      gocql.UUID `json:"id"`
-	Title   string     `json:"title"`
-	Body    string     `json:"body"`
-	Created time.Time  `json:"created"`
-	Authors Authors    `json:"authors"`
-	Tags    []Tag      `json:"tags"`
-	Attrs   Attrs      `json:"attributes"`
+	Id          gocql.UUID `json:"id"`
+	Title       string     `json:"title"`
+	Body        string     `json:"body"`
+	Created     time.Time  `json:"created"`
+	Authors     Authors    `json:"authors"`
+	Tags        []Tag      `json:"tags"`
+	Company     string     `json:"company"`
+	JobTitle    string     `json:"jobtitle"`
+	PictureLink string     `json:"picture_link"`
+	Bio         string     `json:"bio"`
+	Audience    string     `json:"audience"`
 
 	// 7 slots for scoring, I don't know what these mean and there's
 	// no point to encoding that meaning here so the 7 note scale it is
@@ -82,7 +85,9 @@ func ListAbstracts(cass *gocql.Session) (Abstracts, error) {
 	alist := make(Abstracts, 0)
 
 	iq := cass.Query(`
-SELECT id, title, body, created, authors, tags, attributes,
+SELECT id, title, body, created, authors,
+       company, jobtitle, picture_link, bio,
+       tags,
        scores_a, scores_b, scores_c, scores_d,
 	   scores_e, scores_f, scores_g, scores_names
 FROM abstracts`).Iter()
@@ -91,7 +96,9 @@ FROM abstracts`).Iter()
 		a := Abstract{}
 
 		ok := iq.Scan(
-			&a.Id, &a.Title, &a.Body, &a.Created, &a.Authors, &a.Tags, &a.Attrs,
+			&a.Id, &a.Title, &a.Body, &a.Created, &a.Authors,
+			&a.Company, &a.JobTitle, &a.PictureLink, &a.Bio,
+			&a.Tags,
 			&a.ScoresA, &a.ScoresB, &a.ScoresC, &a.ScoresD, &a.ScoresE,
 			&a.ScoresF, &a.ScoresG, &a.ScoresNames,
 		)
@@ -111,30 +118,43 @@ FROM abstracts`).Iter()
 
 func GetAbstract(cass *gocql.Session, id gocql.UUID) (a Abstract, err error) {
 	q := cass.Query(`
-SELECT id, title, body, created, authors, tags, attributes,
+SELECT id, title, body, created, authors,
+       company, jobtitle, picture_link, bio,
+       tags,
        scores_a, scores_b, scores_c, scores_d,
 	   scores_e, scores_f, scores_g, scores_names
 FROM abstracts WHERE id=?`, id)
 
 	err = q.Scan(
-		&a.Id, &a.Title, &a.Body, &a.Created, &a.Authors, &a.Tags,
-		&a.Attrs, &a.ScoresA, &a.ScoresB, &a.ScoresC,
-		&a.ScoresD, &a.ScoresE, &a.ScoresF, &a.ScoresG, &a.ScoresNames,
+		&a.Id, &a.Title, &a.Body, &a.Created, &a.Authors,
+		&a.Company, &a.JobTitle, &a.PictureLink, &a.Bio,
+		&a.Tags,
+		&a.ScoresA, &a.ScoresB, &a.ScoresC,
+		&a.ScoresD, &a.ScoresE, &a.ScoresF, &a.ScoresG,
+		&a.ScoresNames,
 	)
 
 	return a, err
 }
 
-// Create a new abstract record in the DB. Only the base fields
-// are inserted in this call so the frontend doesn't have to persist
-// scores between edits - those are written through ScoreUpdate.Save()
+// Create a new abstract record in the DB.
+// Scores are written through ScoreUpdate.Save() and are
+// not expected to be overwritten by this call.
 func (a *Abstract) Save(cass *gocql.Session) error {
 	return cass.Query(`
-INSERT INTO abstracts
-	(id, title,   body,   created,   authors,   tags,   attributes)
+INSERT INTO abstracts (
+       id, title, body, created, authors,
+       company, jobtitle, picture_link, bio,
+       tags,
+	)
 VALUES
-    (?,  ?,       ?,      ?,         ?,         ?,      ?)
-`, a.Id, a.Title, a.Body, a.Created, a.Authors, a.Tags, a.Attrs).Exec()
+    (?, ?, ?, ?, ?,
+     ?, ?, ?, ?,
+     ?)`,
+		&a.Id, &a.Title, &a.Body, &a.Created, &a.Authors,
+		&a.Company, &a.JobTitle, &a.PictureLink, &a.Bio,
+		&a.Tags,
+	).Exec()
 }
 
 func (su *ScoreUpdate) Save(cass *gocql.Session) error {

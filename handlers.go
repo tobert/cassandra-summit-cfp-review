@@ -75,8 +75,8 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// bare minimum input checking
-	if a.Title == "" || a.Body == "" || len(a.Attrs) == 0 || len(a.Authors) == 0 {
-		log.Printf("AbstractsHandle required field missing")
+	if a.Title == "" || a.Body == "" || len(a.Authors) == 0 {
+		log.Printf("AbstractsHandler required field missing")
 		http.Error(w, "required field missing", 500)
 		return
 	}

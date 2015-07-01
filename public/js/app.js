@@ -73,9 +73,14 @@ ccfp.computeStats = function (data) {
     });
 
     // copy over most fields as-is
-    ["id", "title", "attributes", "body", "tags", "scores_names"].forEach(function (f) {
+		// required fields
+    ["id", "title", "body", "tags", "scores_names"].forEach(function (f) {
       curr[f] = a[f];
     });
+    // possibly not available
+		["company", "jobtitle", "picture_link", "bio", "audience"].forEach(function (key) {
+    	curr[key] = a[key] || "N/A";
+		});
 
     // if one score is set, assume the user set all scores
     if (a["scores_a"] != null && a["scores_a"].hasOwnProperty(userEmail)) {
@@ -84,12 +89,6 @@ ccfp.computeStats = function (data) {
 
     var authors = ccfp.formatAuthors(a, ", ");
     curr["authors"] = authors["names"];
-    curr["company"] = a["attributes"]["company"] || "Unknown";
-    // flatten attributes to make CSV export easier
-    curr["jobtitle"] = a["attributes"]["jobtitle"];
-    curr["picture_link"] = a["attributes"]["picture_link"];
-    curr["bio"] = a["attributes"]["bio"];
-    curr["audience"] = a["attributes"]["audience"];
 
     // again but formatted for safe CSV export
     authors = ccfp.formatAuthors(a, ";");
@@ -236,9 +235,6 @@ ccfp.createScoringModals = function (data) {
   data.forEach(function (a, i) {
     var id = a["id"];
 
-    if (a["attributes"] == null) {
-      a["attributes"] = {};
-    }
     if (a["authors"] == null) {
       a["authors"] = {};
     }
@@ -279,11 +275,11 @@ ccfp.createScoringModals = function (data) {
 
     var authors = ccfp.formatAuthors(a, ", ");
     mkrow("Author(s)", authors["names"]);
-    mkrow("Company", a["attributes"]["company"]);
-    mkrow("Job Title", a["attributes"]["jobtitle"]);
+    mkrow("Company", a["company"]);
+    mkrow("Job Title", a["jobtitle"]);
     mkrow("Picture Link",
-      '<a href="' + a["attributes"]["picture_link"] + '">' + a["attributes"]["picture_link"] + "</a>");
-    mkrow("Intended Audience", a["attributes"]["audience"]);
+      '<a href="' + a["picture_link"] + '">' + a["picture_link"] + "</a>");
+    mkrow("Intended Audience", a["audience"]);
 
     mkrow("Author Bio", "");
     b.append("div").classed("row", true)
@@ -291,7 +287,7 @@ ccfp.createScoringModals = function (data) {
       .append("textarea").classed("form-control", true)
       .attr("disabled", true)
       .attr("rows", 4)
-      .text(a["attributes"]["bio"]);
+      .text(a["bio"]);
 
     mkrow("Abstract", "");
     b.append("div").classed("row", true)
@@ -509,11 +505,9 @@ ccfp.setupEditForm = function (id) {
       $("#body").val(data["body"]);
       $("#title").val(data["title"]);
 
-      ["authors", "attributes"].forEach(function (a) {
-        if (data[a] == null) {
-          data[a] = {};
-        }
-      });
+			if (data["authors"] == null) {
+				data["authors"] = {};
+			}
 
       // the backend supports multiple authors but the frontend work
       // to expose that isn't complete. This code supports getting
@@ -527,16 +521,12 @@ ccfp.setupEditForm = function (id) {
           authors.push(data["authors"][a]);
         }
       };
+
       $("#author0").val(authors.join(", "));
       $("#email0").val(emails.join(", "));
 
-      // fields that are stored as attributes
       ["company", "jobtitle", "bio", "picture_link", "audience"].forEach(function (key) {
-        if (data["attributes"].hasOwnProperty(key)) {
-          $("#" + key).val(data["attributes"][key]);
-        } else {
-          $("#" + key).val("");
-        }
+          $("#" + key).val(data[key]);
       });
 
       $('#abstract-form-modal-title').html("Edit Abstract " + id);
@@ -553,13 +543,11 @@ ccfp.setupEditForm = function (id) {
 ccfp.saveAbstractForm = function () {
   var abs = {
     "authors": {},
-    "attributes": {
-      "company": $("#company").val(),
-      "jobtitle": $("#jobtitle").val(),
-      "bio": $("#bio").val(),
-      "picture_link": $("#picture_link").val(),
-      "audience": $("#audience").val()
-    },
+    "company": $("#company").val(),
+    "jobtitle": $("#jobtitle").val(),
+    "bio": $("#bio").val(),
+    "picture_link": $("#picture_link").val(),
+    "audience": $("#audience").val()
     "title": $("#title").val(),
     "body": $("#body").val()
   };

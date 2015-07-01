@@ -1,7 +1,7 @@
 package main
 
 /*
- * Copyright 2014 Albert P. Tobey <atobey@datastax.com> @AlTobey
+ * Copyright 2015 Albert P. Tobey <atobey@datastax.com> @AlTobey
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,11 +33,17 @@ import (
 var fileFlag, cqlFlag string
 var writeJsonFlag bool
 var fields []string = []string{
-	"First", "Last",
-	"Email", "Company",
-	"Title", "Bio", "Picture URL",
-	"Presentation Title", "Presentation Abstract",
-	"Experience Needed", "Notes",
+	"First",
+	"Last",
+	"Email",
+	"Title",
+	"Company",
+	"Picture URL",
+	"Bio",
+	"Presentation Title",
+	"Presentation Abstract",
+	"Experience Needed",
+	"Presentation Partner",
 }
 
 func init() {
@@ -77,23 +83,28 @@ func main() {
 			log.Fatalf("Read from file '%s' failed: %s\n", fileFlag, err)
 		}
 
-		attr := Attrs{
-			"picture_link":  rec[f["Picture URL"]],
-			"bio":           rec[f["Bio"]],
-			"jobtitle":      rec[f["Title"]],
-			"company":       rec[f["Company"]],
-			"audience":      rec[f["Experience Needed"]],
-			"notes":         rec[f["Notes"]],
+		name := fmt.Sprintf("%s %s", rec[f["First"]], rec[f["Last"]])
+		authors := Authors{
+			Email(rec[f["Email"]]): name,
 		}
 
-		name := fmt.Sprintf("%s %s", rec[f["First"]], rec[f["Last"]])
+		// no sample data to look at so jam it in the key and value for now
+		// this way it'll show up in the UI ugly rather than not at all
+		if rec[f["Presentation Partner"]] != "" {
+			authors[Email(rec[f["Presentation Partner"]])] = rec[f["Presentation Partner"]]
+		}
+
 		a := Abstract{
-			Id:      gocql.TimeUUID(),
-			Title:   rec[f["Presentation Title"]],
-			Body:    rec[f["Presentation Abstract"]],
-			Authors: Authors{Email(rec[f["Email"]]): name},
-			Created: time.Now(),
-			Attrs:   attr,
+			Id:          gocql.TimeUUID(),
+			Title:       rec[f["Presentation Title"]],
+			Body:        rec[f["Presentation Abstract"]],
+			Authors:     authors,
+			Created:     time.Now(),
+			PictureLink: rec[f["Picture URL"]],
+			Bio:         rec[f["Bio"]],
+			JobTitle:    rec[f["Title"]],
+			Company:     rec[f["Company"]],
+			Audience:    rec[f["Experience Needed"]],
 		}
 
 		abstracts = append(abstracts, a)
