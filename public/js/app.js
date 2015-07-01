@@ -74,7 +74,7 @@ ccfp.computeStats = function (data) {
 
     // copy over most fields as-is
 		// required fields
-    ["id", "title", "body", "tags"].forEach(function (f) {
+    ["id", "title", "body"].forEach(function (f) {
       curr[f] = a[f];
     });
     // possibly not available

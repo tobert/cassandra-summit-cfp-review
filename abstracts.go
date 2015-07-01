@@ -38,7 +38,6 @@ type Abstract struct {
 	Body        string     `json:"body"`
 	Created     time.Time  `json:"created"`
 	Authors     Authors    `json:"authors"`
-	Tags        []Tag      `json:"tags"`
 	Company     string     `json:"company"`
 	JobTitle    string     `json:"jobtitle"`
 	PictureLink string     `json:"picture_link"`
@@ -86,8 +85,7 @@ func ListAbstracts(cass *gocql.Session) (Abstracts, error) {
 
 	iq := cass.Query(`
 SELECT id, title, body, created, authors,
-       company, jobtitle, picture_link, bio,
-       tags,
+       company, jobtitle, picture_link, bio, audience,
        scores_a, scores_b, scores_c, scores_d,
 	   scores_e, scores_f, scores_g, scores_names
 FROM abstracts`).Iter()
@@ -97,10 +95,9 @@ FROM abstracts`).Iter()
 
 		ok := iq.Scan(
 			&a.Id, &a.Title, &a.Body, &a.Created, &a.Authors,
-			&a.Company, &a.JobTitle, &a.PictureLink, &a.Bio,
-			&a.Tags,
-			&a.ScoresA, &a.ScoresB, &a.ScoresC, &a.ScoresD, &a.ScoresE,
-			&a.ScoresF, &a.ScoresG, &a.ScoresNames,
+			&a.Company, &a.JobTitle, &a.PictureLink, &a.Bio, &a.Audience,
+			&a.ScoresA, &a.ScoresB, &a.ScoresC, &a.ScoresD,
+			&a.ScoresE, &a.ScoresF, &a.ScoresG, &a.ScoresNames,
 		)
 
 		if ok {
@@ -119,19 +116,16 @@ FROM abstracts`).Iter()
 func GetAbstract(cass *gocql.Session, id gocql.UUID) (a Abstract, err error) {
 	q := cass.Query(`
 SELECT id, title, body, created, authors,
-       company, jobtitle, picture_link, bio,
-       tags,
+       company, jobtitle, picture_link, bio, audience,
        scores_a, scores_b, scores_c, scores_d,
 	   scores_e, scores_f, scores_g, scores_names
 FROM abstracts WHERE id=?`, id)
 
 	err = q.Scan(
 		&a.Id, &a.Title, &a.Body, &a.Created, &a.Authors,
-		&a.Company, &a.JobTitle, &a.PictureLink, &a.Bio,
-		&a.Tags,
-		&a.ScoresA, &a.ScoresB, &a.ScoresC,
-		&a.ScoresD, &a.ScoresE, &a.ScoresF, &a.ScoresG,
-		&a.ScoresNames,
+		&a.Company, &a.JobTitle, &a.PictureLink, &a.Bio, &a.Audience,
+		&a.ScoresA, &a.ScoresB, &a.ScoresC, &a.ScoresD,
+		&a.ScoresE, &a.ScoresF, &a.ScoresG, &a.ScoresNames,
 	)
 
 	return a, err
@@ -144,16 +138,13 @@ func (a *Abstract) Save(cass *gocql.Session) error {
 	return cass.Query(`
 INSERT INTO abstracts (
        id, title, body, created, authors,
-       company, jobtitle, picture_link, bio,
-       tags
+       company, jobtitle, picture_link, bio, audience
 	)
 VALUES
     (?, ?, ?, ?, ?,
-     ?, ?, ?, ?,
-     ?)`,
+     ?, ?, ?, ?, ?)`,
 		&a.Id, &a.Title, &a.Body, &a.Created, &a.Authors,
-		&a.Company, &a.JobTitle, &a.PictureLink, &a.Bio,
-		&a.Tags,
+		&a.Company, &a.JobTitle, &a.PictureLink, &a.Bio, &a.Audience,
 	).Exec()
 }
 

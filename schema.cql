@@ -8,7 +8,6 @@ CREATE TABLE abstracts (
     body         text,
     created      timestamp,
     authors      map<text,text>,
-    tags         set<text>,
 	company      text,
 	jobtitle     text,
 	picture_link text,
