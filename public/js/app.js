@@ -43,7 +43,7 @@ ccfp.formatAuthors = function (item, sep) {
   var authors = [];
   var emails = [];
   for (key in item["authors"]) {
-    if (item["authors"].hasOwnProperty(key)) {
+    if (item["authors"].hasOwnProperty(key) && item["authors"][key] != "1") {
       authors.push(item["authors"][key]);
       emails.push(key);
     }

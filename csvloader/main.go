@@ -90,9 +90,10 @@ func main() {
 
 		// no sample data to look at so jam it in the key and value for now
 		// this way it'll show up in the UI ugly rather than not at all
-		if rec[f["Presentation Partner"]] != "" {
-			authors[Email(rec[f["Presentation Partner"]])] = rec[f["Presentation Partner"]]
-		}
+		// except sometimes it's a 1 so just ignore it
+		//if rec[f["Presentation Partner"]] != "" {
+	    //		authors[Email(rec[f["Presentation Partner"]])] = rec[f["Presentation Partner"]]
+	    //}
 
 		a := Abstract{
 			Id:          gocql.TimeUUID(),
