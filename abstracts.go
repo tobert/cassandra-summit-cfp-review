@@ -145,7 +145,7 @@ func (a *Abstract) Save(cass *gocql.Session) error {
 INSERT INTO abstracts (
        id, title, body, created, authors,
        company, jobtitle, picture_link, bio,
-       tags,
+       tags
 	)
 VALUES
     (?, ?, ?, ?, ?,

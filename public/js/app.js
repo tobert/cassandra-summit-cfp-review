@@ -547,7 +547,7 @@ ccfp.saveAbstractForm = function () {
     "jobtitle": $("#jobtitle").val(),
     "bio": $("#bio").val(),
     "picture_link": $("#picture_link").val(),
-    "audience": $("#audience").val()
+    "audience": $("#audience").val(),
     "title": $("#title").val(),
     "body": $("#body").val()
   };
