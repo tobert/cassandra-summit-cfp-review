@@ -340,8 +340,8 @@ ccfp.createScoringModals = function (data) {
     };
 
     b.append("hr");
-    mkslider("Quality of Abstract", "quality", "scores_a");
-    mkslider("Relevance of Talk", "relevance", "scores_b");
+    mkslider("Quality", "quality", "scores_a");
+    mkslider("Relevance", "relevance", "scores_b");
     b.append("hr");
 
     mkrow("Comment (optional)", "");
