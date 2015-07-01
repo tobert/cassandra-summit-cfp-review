@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Albert P. Tobey <atobey@datastax.com> @AlTobey
+ * Copyright 2015 Albert P. Tobey <atobey@datastax.com> @AlTobey
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ ccfp.computeStats = function (data) {
 
     // copy over most fields as-is
 		// required fields
-    ["id", "title", "body", "tags", "scores_names"].forEach(function (f) {
+    ["id", "title", "body", "tags"].forEach(function (f) {
       curr[f] = a[f];
     });
     // possibly not available
@@ -340,9 +340,8 @@ ccfp.createScoringModals = function (data) {
     };
 
     b.append("hr");
-    mkslider("Skill of Speaker", "skill", "scores_a");
-    mkslider("Quality of Abstract", "quality", "scores_b");
-    mkslider("Relevance of Talk", "relevance", "scores_c");
+    mkslider("Quality of Abstract", "quality", "scores_a");
+    mkslider("Relevance of Talk", "relevance", "scores_b");
     b.append("hr");
 
     mkrow("Comment (optional)", "");
