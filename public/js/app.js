@@ -574,14 +574,25 @@ ccfp.saveAbstractForm = function () {
     });
 };
 
-ccfp.enableCSVExportLinks = function () {
-    d3.select("#action-menu")
-      .append("li")
-      .append("a")
-      .attr("download", "abstracts.csv")
-      .attr("id", "export-csv-link")
-      .attr("href", "#")
-      .text("Download CSV");
+ccfp.enableAdminLinks = function () {
+	  var menu = d3.select("#action-menu");
+
+		menu.append("li")
+        .append("a")
+        .attr("id", "new-abstract-link")
+        .attr("href", "#")
+        .text("New Abstract");
+
+    $('#new-abstract-link').on('click', function (e) {
+      ccfp.newAbstractForm();
+    });
+
+		menu.append("li")
+        .append("a")
+        .attr("download", "abstracts.csv")
+        .attr("id", "export-csv-link")
+        .attr("href", "#")
+        .text("Download CSV");
 
     $("#export-csv-link").on('click', function () {
       d3.select("#export-csv-link").attr("href",
@@ -611,10 +622,6 @@ ccfp.run = function () {
       ccfp.renderOverview();
   });
 
-  $('#new-abstract-link').on('click', function (e) {
-    ccfp.newAbstractForm();
-  });
-
   $('#abstract-form-submit').on('click', function (e) {
     $("#abstract-form").validate({
       submitHandler: ccfp.saveAbstractForm
@@ -624,7 +631,7 @@ ccfp.run = function () {
   // dirty hack, insecure, but whatever people can get this data anyways
   // something to fix before EU ...
   if (userEmail == "brady@datastax.com" || userEmail == "atobey@datastax.com") {
-    ccfp.enableCSVExportLinks();
+    ccfp.enableAdminLinks();
   }
 
   jQuery.validator.setDefaults({
