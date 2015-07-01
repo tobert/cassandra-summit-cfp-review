@@ -1,12 +1,9 @@
-FROM       busybox
+FROM       debian:jessie
 MAINTAINER Al Tobey <atobey@datastax.com>
 
-# I had to `cp -r /etc/ssl .` for this to work
-# the Go TLS client looks for /etc/ssl and requires it
-# to check Mozilla's cert for Persona
-COPY ssl /etc/ssl
-
+RUN apt-get update && apt-get install -y ca-certificates
 COPY cassandra-summit-cfp-review /cassandra-summit-cfp-review
+COPY schema.cql /
 COPY public /public
 EXPOSE 8080
 USER 1336
