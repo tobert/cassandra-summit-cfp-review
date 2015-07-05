@@ -23,20 +23,56 @@
  */
 var ccfp = ccfp || {};
 
+// obviously not secure; only meant to hide things that are not relevant to
+// non-admins
+ccfp.admins = [
+		"brady@datastax.com",
+		"atobey@datastax.com",
+		"patrick@datastax.com",
+		"jon@datastax.com",
+		"christian@datastax.com",
+		"gehrig@datastax.com"
+];
+
+// only scores_a is being used at the moment, but most of the
+// support for b-g is still here (for future use?)
 ccfp.scores_fields = ["scores_a", "scores_b", "scores_c", "scores_d", "scores_e", "scores_f", "scores_g"];
 
+// don't change these (or all the data in the DB will no longer match)
+ccfp.scores_a_values = { "1": "No", "2": "Maybe", "3": "Yes" };
+
 // needs to match the table structure in index.html
-ccfp.table_fields = [
-  "authors", "title", "company", "reviews", "scores_a", "scores_b",
-  "scores_a-avg", "scores_b-avg",
-  "score-link", "edit-link"
+ccfp.table_fields = [ "authors", "title", "company", "scores_a", "rate-link" ];
+
+// nice-looking names
+ccfp.header_names = {
+	"authors": "Author",
+	"title": "Title",
+	"company": "Company",
+	"scores_a": "My Choice",
+	"scores_a-count": "Reviews",
+	"scores_a-yes": "Yes",
+	"scores_a-maybe": "Maybe",
+	"scores_a-no": "No"
+};
+
+// fields that are only shown to admins
+ccfp.admin_fields = [
+  "edit-link", "scores_a-count", "scores_a-yes", "scores_a-maybe", "scores_a-no"
 ];
 
 ccfp.csv_fields = [
   "names", "emails", "title", "company", "reviews",
-  "scores_a-avg", "scores_b-avg", "scores_c-avg",
+  "scores_a-count", "scores_a-yes", "scores_a-maybe", "scores_a-no",
   "jobtitle", "picture_link", "bio", "audience"
 ];
+
+// TODO: figure out what this was supposed to do.
+// persona.js has this after logout, so I think it's supposed to
+// make sure any controls like edit buttons are disabled.
+ccfp.disable = function () {
+	return true;
+};
 
 // flatten the authors map to a comma-separated list
 ccfp.formatAuthors = function (item, sep) {
@@ -60,7 +96,7 @@ ccfp.computeStats = function (data) {
   var numAbstracts = 0;
   var numScored = 0;
   var absStats = [];
-  var csvdata = [];
+  var csvdata = [ccfp.csv_fields];
 
   data.forEach(function (a) {
     var id = a["id"];
@@ -95,48 +131,30 @@ ccfp.computeStats = function (data) {
     curr["emails"] = authors["emails"];
     curr["names"] = authors["names"];
 
-    // count up how many people have already scored this abstract
-    curr["reviews"] = 0;
-    for (user in a["scores_a"]) {
-      if (a["scores_a"].hasOwnProperty(user)) {
-        curr["reviews"]++;
-      }
+    // count up yes/no/maybe's in scores_a (all others are ignored for now)
+    curr["scores_a-count"] = 0;
+    curr["scores_a-yes"]   = 0;
+    curr["scores_a-maybe"] = 0;
+    curr["scores_a-no"]    = 0;
+
+    for (email in a["scores_a"]) {
+			if (email == userEmail) {
+				curr["scores_a"] = a["scores_a"][email];
+			}
+
+			if (_.isNumber(a["scores_a"][email])) {
+    		curr["scores_a-count"]++;
+
+				// Note: values must match map at the top of this file
+ 				if (a["scores_a"][email] === 1) {
+    			curr["scores_a-no"]++;
+				} else if (a["scores_a"][email] === 2) {
+    			curr["scores_a-maybe"]++;
+				} else if (a["scores_a"][email] === 3) {
+    			curr["scores_a-yes"]++;
+				}
+			}
     }
-
-    // total all of the score fields across reviewers
-    ccfp.scores_fields.forEach(function (field) {
-      // track total & count to compute average later
-      var total_field = field + "-total";
-      var count_field = field + "-count";
-      curr[total_field] = 0;
-      curr[count_field] = 0;
-
-      for (email in a[field]) { // abstract/scores_a
-        if (a[field].hasOwnProperty(email)) { // abstract/scores_a/email
-          // ignore empty fields and scores of 50 (hack)
-          if (a[field][email] == undefined || a[field][email] == 50) {
-            continue;
-          }
-          curr[count_field]++;
-          curr[total_field] += a[field][email] || 0;
-          if (email == userEmail) {
-            curr[field] = a[field][email]; // current logged in user's score
-          }
-        }
-      }
-    });
-
-    // compute averages
-    ccfp.scores_fields.forEach(function (field) {
-      var total_field = field + "-total";
-      var count_field = field + "-count";
-      var avg_field = field + "-avg";
-      if (curr[count_field] == 0) {
-        curr[avg_field] = 0;
-      } else {
-        curr[avg_field] = Math.floor(curr[total_field] / curr[count_field]);
-      }
-    });
 
     absStats.push(curr);
 
@@ -161,21 +179,66 @@ ccfp.renderOverview = function () {
   $.ajax({ url: '/abstracts/', dataType: "json" })
     .done(function (data, status, xhr) {
       ccfp.stats = ccfp.computeStats(data);
-      console.log("Raw Data:", data);
-      console.log("Computed Stats:", ccfp.stats);
+
+			// admins have a couple extra columns
+			var columns = ccfp.table_fields;
+			if (ccfp.isAdmin()) {
+				columns = ccfp.table_fields.concat(ccfp.admin_fields);
+			}
+
+			var panel = d3.select("#overview-panel").classed("row", true);
+			    panel.selectAll("table").remove(); // make sure it's clean
+
+			var table = panel.append("table")
+						.classed({"table": true, "table-striped": true})
+						.attr("id", "overview-table");
+
+			var thead = table.append("thead").append("tr").classed("ccfp-abstract-header", true);
+
+			thead.selectAll("th")
+				.data(columns)
+				.enter()
+				.append("th")
+				.attr("style", "white-space: nowrap;")
+				.text(function (d,i) {
+					if (ccfp.header_names.hasOwnProperty(d)) {
+						return ccfp.header_names[d];
+					} else {
+						return "";
+					}
+				});
+
+			var refresh = thead.append("th").append("button")
+				.attr("type", "button")
+				.attr("id", "overview-refresh-button")
+				.classed({"btn": true, "btn-default": true, "btn-xs": true})
+				.on("click", function () {
+      		ccfp.deleteOverview();
+      		ccfp.renderOverview();
+				});
+
+			refresh.append("span")
+				.classed({"glyphicon": true, "glyphicon-refresh": true})
+				.text("Refresh");
+
+			// add an empty column to the list to go under Refresh
+			columns.push("");
+
+			var tbody = table.append("tbody").attr("id", "overview-tbody");
+
       // create a row for each abstract
-      var tr = d3.select("#overview-tbody")
-        .selectAll("tr")
+      var tr = tbody.selectAll("tr")
         .data(ccfp.stats.abstracts, function (d) { return d["id"]; })
         .enter()
-        .append("tr");
+        .append("tr")
+        .classed("ccfp-abstract-row", true);
 
       // fill in the fields for each abstract
       tr.selectAll("td")
         .data(function (d) {
-          return ccfp.table_fields.map(function (f) {
-            // 0: value, 1: record, 2: field name
-            return [d[f], d, f];
+          return columns.map(function (f) {
+          	// 0: value, 1: record, 2: field name
+           	return [d[f], d, f];
           });
         })
         .enter()
@@ -185,14 +248,32 @@ ccfp.renderOverview = function () {
         .attr("data-id", function (d) { return d[1]["id"]; })
         .attr("data-toggle", "modal")
         .html(function (d) {
-          if (d[2] == "score-link") {
-            return '<a href="#">score</a>';
+          if (d[2] == "rate-link") {
+            return '<a href="#">rate</a>';
           }
-          return d[0];
+					else if (d[2] == "scores_a") {
+						return ccfp.scores_a_values["" + d[0]];
+					}
+					else {
+          	return d[0];
+					}
         });
+
+				// enable table sorting using a jquery plugin, but only on the
+				// columns that are sortable
+				var tsheaders = {};
+				columns.forEach(function (d,i) {
+					if (d === "" || d.match("/-link$/")) {
+						tsheaders[i] = { "sorter": false };
+				  }
+				});
+        $("#overview-table").tablesorter({ "headers": tsheaders });
 
       // change the edit link to open the editing modal using plain onclick
       // where it's more straightforward to pass the id over
+
+			// only fires if edit-link is already in the table
+			// TODO fix this
       tr.selectAll("td")
         .select(function (d) {
           if (d[2] == "edit-link") {
@@ -210,10 +291,11 @@ ccfp.renderOverview = function () {
         .attr("href", "#")
         .text("edit");
 
-        $("#overview-table").tablesorter();
+			// remove the loading animation
+			d3.select("#loading-animation").remove();
     })
     .fail(function (xhr, status, err) {
-      alert("XHR failed: please email atobey@datastax.com: " + status);
+      alert("renderOverview XHR failed: please email info@planetcassandra.org: " + status);
       console.log("XHR failed: " + status);
     });
 };
@@ -232,6 +314,8 @@ ccfp.deleteOverview = function () {
  */
 ccfp.createScoringModals = function (data) {
   var body = d3.select("body");
+	var modals = {};
+
   data.forEach(function (a, i) {
     var id = a["id"];
 
@@ -241,12 +325,22 @@ ccfp.createScoringModals = function (data) {
 
     var divId = "abstract-" + id + "-modal";
 
+		// this function returns a map of uuid => domid
+		modals[id] = divId;
+
     var m = body.append("form")
       .attr("id", "score-" + id)
       .append("div").classed({ "modal": true, "fade": true })
       .attr("id", divId)
       .attr("role", "dialog")
       .attr("tabindex", "-1");
+
+		// automatically refresh the overview when a modal closes
+		// use the jquery .on() since d3's doesn't seem to work
+		$("#" + divId).on('hidden.bs.modal', function () {
+			ccfp.deleteOverview();
+			ccfp.renderOverview();
+		});
 
     var c = m.append("div")
       .classed({ "modal-dialog": true, "modal-lg": true })
@@ -284,7 +378,7 @@ ccfp.createScoringModals = function (data) {
     mkrow("Author Bio", "");
     b.append("div").classed("row", true)
       .append("div").classed({ "col-sm-12": true, "ccfp-view": true })
-      .append("textarea").classed("form-control", true)
+      .append("textarea").classed({"form-control": true, "ccfp-textarea": true})
       .attr("disabled", true)
       .attr("rows", 4)
       .text(a["bio"]);
@@ -294,54 +388,50 @@ ccfp.createScoringModals = function (data) {
       .append("div").classed({ "col-sm-12": true, "ccfp-view": true })
       .append("textarea")
       .attr("disabled", true)
-      .attr("rows", 8).classed("form-control", true)
+      .attr("rows", 8).classed({"form-control": true, "ccfp-textarea": true})
       .text(a["body"]);
 
-    var sliders = [];
-    var mkslider = function (name, domname, slot) {
-      var domid = domname + "-slider-" + id;
-      var value = 50;
-
-      if (a[slot] == null) {
-        a[slot] = {};
-      }
-
-      if (a[slot].hasOwnProperty(userEmail)) {
-        value = a[slot][userEmail];
-      }
-
-      var r = b.append("div").classed({ "row": true, "ccfp-view": true });
-      r.append("div").classed("col-sm-3", true)
-        .append("strong")
-        .html(name);
-      var v = r.append("div").classed("col-sm-1", true)
-        .append("strong")
-        .text(value);
-      r.append("div").classed("col-sm-8", true)
-        .append("input")
-        .attr("id", domid)
-        .attr("type", "text")
-        .style("width", "140px")
-        .attr("data-slider-id", domid)
-        .attr("data-slider-min", 0)
-        .attr("data-slider-max", 100)
-        .attr("data-slider-step", 1)
-        .attr("data-slider-value", value);
-
-      var s = $("#" + domid).slider().on('slideStop', function () {
-        ccfp.updateScores(id, sliders, divId);
-      }).data('slider');
-
-      // well this is weird ... it's best to update all scores at once
-      // in a single ajax call so the sliders themselves, the cell containing
-      // the score value, and the slot name all need to be in an array scoped
-      // higher than this function so we can close over it ...
-      sliders.push({ 'slider': s, 'cell': v, 'slot': slot });
-    };
-
     b.append("hr");
-    mkslider("Quality", "quality", "scores_a");
-    mkslider("Relevance", "relevance", "scores_b");
+
+    var choice = 0;
+
+    if (a["scores_a"] == null) {
+      a["scores_a"] = {};
+    }
+
+    if (a["scores_a"].hasOwnProperty(userEmail)) {
+      choice = a["scores_a"][userEmail];
+    }
+
+    var r = b.append("div").classed({ "row": true, "ccfp-view": true });
+    r.append("div").classed("col-sm-3", true)
+      .append("strong")
+      .html("My Choice");
+
+		var rdiv = r.append("div")
+		 .classed({"col-sm-9": true, "btn-group": true})
+		 .attr("data-toggle", "buttons");
+
+		rdiv.selectAll("label")
+		 .data(_.keys(ccfp.scores_a_values))
+		 .enter()
+		   .append("label")
+		     .classed({"btn": true, "btn-primary": true})
+		     .html(function (d) { return ccfp.scores_a_values[d]; })
+         .classed("active", function (d) { return choice === d; })
+		     .on("click", function (d) {
+					 ccfp.updateScores(id, "scores_a", d);
+				 })
+		   .append("input")
+				 .attr("id", "scores_a-" + id)
+         .attr("type", "radio")
+         .attr("name", "scores_a-" + id)
+         .attr("autocomplete", "off") // recommended by bootstrap docs
+         .attr("checked", function (d) {
+					 if (choice === d) { return "1" }
+					 else { return null };
+				 });
+
     b.append("hr");
 
     mkrow("Comment (optional)", "");
@@ -354,21 +444,19 @@ ccfp.createScoringModals = function (data) {
       .append("textarea")
       .attr("id", "new-comment-body-" + id)
       .attr("name", "body")
-      .attr("rows", 4).classed("form-control", true);
+      .attr("rows", 4).classed({"form-control": true, "ccfp-textarea": true});
 
     var cbtn = cform.append("button")
       .classed({ "btn": true, "btn-default": true })
       .attr("id", "new-comment-save-" + id)
       .text("Save Comment");
 
-    b.append("div").classed({ "row": true, "ccfp-view": true }); // spacer
-
     // TODO: add button to hide comments, hide by default
     var ctbl = b.append("table")
       .classed({ "table": true, "table-striped": true, "table-hover": true, "table-condensed": true });
     ctbl.append("tbody").attr("id", "comment-list-" + id);
 
-    ccfp.populateComments(id);
+    b.append("div").classed({ "row": true, "ccfp-view": true }); // spacer
 
     // previous / next / done buttons
     // TODO: probably a better way to do this d3-style
@@ -419,13 +507,15 @@ ccfp.createScoringModals = function (data) {
       $.ajax({ url: "/comments/", type: "PUT", data: js, dataType: "json" })
         .done(function (d, status, xhr) {
           console.log("Response from PUT /comments/: ", status, d);
-          ccfp.populateComments(id);
+          ccfp.populateComments(id); // reload the comments after writing
           cb.val("");
+					// NOTE: these must be force-enabled on every modal display, which
+					// is currently wired up in setup using an on display listener
           ctxt.attr("disabled", null);
           cbtn.attr("disabled", null);
         })
         .fail(function (data, status, xhr) {
-          alert("XHR failed: please email atobey@datastax.com");
+          alert("XHR failed: please email info@planetcassandra.org");
           console.log("XHR save of abstract form failed.", data, status, xhr);
         });
       return true;
@@ -436,31 +526,24 @@ ccfp.createScoringModals = function (data) {
     $("#review-abstract-prev-" + id).on('click', save_comment);
     $("#review-abstract-next-" + id).on('click', save_comment);
   });
+
+	return modals;
 };
 
-ccfp.updateScores = function (id, sliders, divId) {
-  var su = [];
-  sliders.forEach(function (s) {
-    var score = s['slider'].getValue();
-    su.push({ "id": id, "slot": s['slot'], "email": userEmail, "score": score });
-    s['cell'].text(score);
-  });
+// the backend supports updating multiple slots in one go, but this
+// does not since the current version only needs one
+ccfp.updateScores = function (id, slot, value) {
+	// the backend refuses to parse "score" as a string! Make sure it's a number before serialization.
+	var update = [{ "id": id, "slot": slot, "email": userEmail, "score": +value}];
 
   $.ajax({
     type: "POST",
     contentType: "application/json; charset=utf-8",
     url: '/updatescores',
-    data: JSON.stringify(su),
+    data: JSON.stringify(update),
     dataType: "json"
-  })
-    .done(function (data, status, xhr) {
-      // TODO: replace this with close/cancel buttons on the modal!
-      // reload the overview when the modal closes
-      $("#" + divId).on('hidden.bs.modal', function () {
-        ccfp.deleteOverview();
-        ccfp.renderOverview();
-      });
-    });
+  });
+	// TODO: display an error?
 };
 
 ccfp.populateComments = function (id) {
@@ -482,7 +565,7 @@ ccfp.populateComments = function (id) {
         .text(function (d) { return d["body"]; });
     })
     .fail(function (data, status, xhr) {
-      alert("XHR failed: please email atobey@datastax.com");
+      alert("XHR failed: please email info@planetcassandra.org");
       console.log("XHR failed.", data, status, xhr);
     });
 };
@@ -532,7 +615,7 @@ ccfp.setupEditForm = function (id) {
       $('#abstract-form-modal').modal()
     })
     .fail(function (data, status, xhr) {
-      alert("XHR failed: please email atobey@datastax.com");
+      alert("XHR failed: please email info@planetcassandra.org");
       console.log("XHR fetch for abstract form failed.", data, status, xhr);
     });
 };
@@ -569,7 +652,7 @@ ccfp.saveAbstractForm = function () {
       console.log("Saved to backend.", data, status, xhr);
     })
     .fail(function (data, status, xhr) {
-      alert("XHR failed: please email atobey@datastax.com");
+      alert("XHR failed: please email info@planetcassandra.org");
       console.log("XHR save of abstract form failed.", data, status, xhr);
     });
 };
@@ -601,6 +684,10 @@ ccfp.enableAdminLinks = function () {
     });
 };
 
+ccfp.isAdmin = function () {
+	  return _.contains(ccfp.admins, userEmail);
+};
+
 // persona can take a second or two to do its round trip with the
 // server, so rather than doing setup with $(document).ready, put
 // that code in run() and let the persona setup call it.
@@ -608,19 +695,30 @@ ccfp.run = function () {
   // create a modal for each entry for entering scores
   $.ajax({ url: '/abstracts/', dataType: "json" })
     .done(function (data, status, xhr) {
-      ccfp.createScoringModals(data);
+      var modals = ccfp.createScoringModals(data);
+
+			// add a listener to update comments on display of the modal
+			// this makes the page load more quickly and should handle concurrent
+			// users adding comments a little more cleanly without having to get fancy
+			// keys are uuids, values are dom ids
+			_.keys(modals).forEach(function (id) {
+				$("#" + modals[id]).on("shown.bs.modal", function () {
+					// load comments
+					ccfp.populateComments(id);
+					// make sure comments are enabled when a modal is displayed since a save
+					// ajax call may not have gotten a chance to reenable them
+					$("#new-comment-save-" + id).prop("disabled", false);
+					$("#new-comment-body-" + id).prop("disabled", false);
+				});
+			});
+
       // render the overview after the modals are ready
       ccfp.renderOverview();
     })
     .fail(function (xhr, status, err) {
-      alert("XHR failed: please email atobey@datastax.com");
+      alert("XHR failed: please email info@planetcassandra.org");
       console.log("XHR failed: " + status);
     });
-
-  $('#overview-refresh-button').on('click', function (e) {
-      ccfp.deleteOverview();
-      ccfp.renderOverview();
-  });
 
   $('#abstract-form-submit').on('click', function (e) {
     $("#abstract-form").validate({
@@ -630,7 +728,7 @@ ccfp.run = function () {
 
   // dirty hack, insecure, but whatever people can get this data anyways
   // something to fix before EU ...
-  if (userEmail == "brady@datastax.com" || userEmail == "atobey@datastax.com") {
+  if (ccfp.isAdmin()) {
     ccfp.enableAdminLinks();
   }
 
