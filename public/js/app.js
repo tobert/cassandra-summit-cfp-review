@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * requires: jQuery, D3, and some plugins, see index.html at the bottom
+ * requires: jQuery, D3, and underscore.js, see index.html at the bottom
  *
  * I'm not proud of this but it works. If I had it to do over again I
  * go with a pipline something like Go <-> angular <-> D3 <-> UI so that
