@@ -69,7 +69,7 @@ func (cs *CQLStore) New(r *http.Request, name string) (sess *sessions.Session, e
 		}
 
 		if cs.load(sess) == nil {
-			log.Printf("Got a valid session ID from cookie: '%s'\n", sess.ID)
+			//log.Printf("Got a valid session ID from cookie: '%s'\n", sess.ID)
 			sess.IsNew = false // existing session OK
 		} else {
 			log.Printf("Invalid session ID from cookie: '%s'\n", sess.ID)
