@@ -24,6 +24,9 @@
 var ccfp = ccfp || {};
 
 // populated from the server in ccfp.run()
+// this list is used to display admin functions to admins
+// and should absolutely NEVER be used for security
+// any security verification belongs in the backend code
 ccfp.admins = [];
 
 // only scores_a is being used at the moment, but most of the
