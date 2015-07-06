@@ -32,18 +32,9 @@ CREATE TABLE comments (
     PRIMARY KEY(abstract_id, id)
 );
 
-CREATE TABLE abstract_email_index (
-    email text,
-	abstracts set<uuid>,
-	comments set<uuid>,
+CREATE TABLE admins (
+	email    text,
 	PRIMARY KEY(email)
-);
-
-CREATE TABLE abstract_tag_index (
-    tag text,
-	abstracts set<uuid>,
-	comments set<uuid>,
-	PRIMARY KEY(tag)
 );
 
 CREATE TABLE sessions (

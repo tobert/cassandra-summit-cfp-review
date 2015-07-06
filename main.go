@@ -63,6 +63,7 @@ func main() {
 
 	r.HandleFunc("/", RootHandler)
 	r.HandleFunc("/index.html", RootHandler)
+	r.HandleFunc("/admins/", AdminsHandler)
 	r.HandleFunc("/abstracts/", AbstractsHandler)
 	r.HandleFunc("/comments/", CommentsHandler)
 	r.HandleFunc("/comments/{abstract_id:[-a-f0-9]+}", CommentsHandler)

@@ -23,16 +23,8 @@
  */
 var ccfp = ccfp || {};
 
-// obviously not secure; only meant to hide things that are not relevant to
-// non-admins
-ccfp.admins = [
-		"brady@datastax.com",
-		"atobey@datastax.com",
-		"patrick@datastax.com",
-		"jon@datastax.com",
-		"christian@datastax.com",
-		"gehrig@datastax.com"
-];
+// populated from the server in ccfp.run()
+ccfp.admins = [];
 
 // only scores_a is being used at the moment, but most of the
 // support for b-g is still here (for future use?)
@@ -757,6 +749,16 @@ ccfp.isAdmin = function () {
 // server, so rather than doing setup with $(document).ready, put
 // that code in run() and let the persona setup call it.
 ccfp.run = function () {
+  $.ajax({ url: '/admins/', dataType: "json" })
+    .done(function (data, status, xhr) {
+			ccfp.admins = data;
+		})
+    .fail(function (xhr, status, err) {
+      alert("/admins/ XHR failed: please email info@planetcassandra.org");
+      console.log("XHR failed: " + status);
+    });
+
+
   // create a modal for each entry for entering scores
   $.ajax({ url: '/abstracts/', dataType: "json" })
     .done(function (data, status, xhr) {
@@ -781,7 +783,7 @@ ccfp.run = function () {
       ccfp.renderOverview();
     })
     .fail(function (xhr, status, err) {
-      alert("XHR failed: please email info@planetcassandra.org");
+      alert("/abstracts/ XHR failed: please email info@planetcassandra.org");
       console.log("XHR failed: " + status);
     });
 

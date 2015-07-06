@@ -32,12 +32,12 @@ import (
 func RootHandler(w http.ResponseWriter, r *http.Request) {
 	// check for auth but ignore the result: this will initialize
 	// the cookie on page load
-	checkAuth(w, r)
+	checkAuth(w, r, false)
 	http.ServeFile(w, r, "./public/index.html")
 }
 
 func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
-	if !checkAuth(w, r) {
+	if !checkAuth(w, r, false) {
 		return
 	}
 
@@ -74,6 +74,11 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// GET returns early, anything else requires admin privs
+	if !checkAuth(w, r, true) {
+		return
+	}
+
 	// bare minimum input checking
 	if a.Title == "" || a.Body == "" || len(a.Authors) == 0 {
 		log.Printf("AbstractsHandler required field missing")
@@ -92,7 +97,7 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetAbstractHandler(w http.ResponseWriter, r *http.Request) {
-	if !checkAuth(w, r) {
+	if !checkAuth(w, r, false) {
 		return
 	}
 
@@ -107,7 +112,7 @@ func GetAbstractHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteAbstractHandler(w http.ResponseWriter, r *http.Request) {
-	if !checkAuth(w, r) {
+	if !checkAuth(w, r, true) {
 		return
 	}
 
@@ -125,7 +130,7 @@ func DeleteAbstractHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ScoreUpdateHandler(w http.ResponseWriter, r *http.Request) {
-	if !checkAuth(w, r) {
+	if !checkAuth(w, r, false) {
 		return
 	}
 	scores := make(ScoreUpdates, 7)
@@ -148,7 +153,7 @@ func ScoreUpdateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func CommentsHandler(w http.ResponseWriter, r *http.Request) {
-	if !checkAuth(w, r) {
+	if !checkAuth(w, r, false) {
 		return
 	}
 	c := Comment{}
@@ -201,10 +206,19 @@ func CommentsHandler(w http.ResponseWriter, r *http.Request) {
 	jsonOut(w, r, c)
 }
 
+func AdminsHandler(w http.ResponseWriter, r *http.Request) {
+	admins, err := fetchAdmins()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("AdminsHandler failed: %s", err), 500)
+		return
+	}
+
+	jsonOut(w, r, admins)
+}
+
 // returns the email string if authenticated (via persona), it won't
 // be there at all if the user didn't authenticate
-func checkAuth(w http.ResponseWriter, r *http.Request) bool {
-	log.Println("checkAuth()")
+func checkAuth(w http.ResponseWriter, r *http.Request, adminOnly bool) bool {
 	sess, err := store.Get(r, sessCookie)
 	if err != nil {
 		log.Printf("failed to read cookie: %s\n", err)
@@ -218,8 +232,17 @@ func checkAuth(w http.ResponseWriter, r *http.Request) bool {
 
 	if sess.Values["email"] != nil {
 		email := sess.Values["email"].(string)
-		log.Printf("sess.Values[email]: '%s'\n", sess.Values["email"])
+		//log.Printf("sess.Values[email]: '%s'\n", sess.Values["email"])
 		if email != "" {
+			// authentication is successful, now check for admin status if that is requested
+			if adminOnly {
+				isAdmin, err := checkIfAdmin(email)
+				if err != nil {
+					log.Printf("admin check failed: %s\n", err)
+					return false
+				}
+				return isAdmin
+			}
 			return true
 		}
 	}
