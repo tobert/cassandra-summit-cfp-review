@@ -58,7 +58,7 @@ ccfp.header_names = {
 
 // fields that are only shown to admins
 ccfp.admin_fields = [
-  "edit-link", "scores_a-count", "scores_a-yes", "scores_a-maybe", "scores_a-no"
+  "edit-link", "delete-link", "scores_a-count", "scores_a-yes", "scores_a-maybe", "scores_a-no"
 ];
 
 ccfp.csv_fields = [
@@ -212,10 +212,7 @@ ccfp.renderOverview = function () {
 				.attr("type", "button")
 				.attr("id", "overview-refresh-button")
 				.classed({"btn": true, "btn-default": true, "btn-xs": true})
-				.on("click", function () {
-      		ccfp.deleteOverview();
-      		ccfp.renderOverview();
-				});
+				.on("click", ccfp.refreshOverview());
 
 			refresh.append("span")
 				.classed({"glyphicon": true, "glyphicon-refresh": true})
@@ -272,24 +269,38 @@ ccfp.renderOverview = function () {
       // change the edit link to open the editing modal using plain onclick
       // where it's more straightforward to pass the id over
 
-			// only fires if edit-link is already in the table
-			// TODO fix this
-      tr.selectAll("td")
-        .select(function (d) {
-          if (d[2] == "edit-link") {
-            return this;
-          }
-          return null;
-        })
-        .attr("data-target", null)
-        .attr("data-toggle", null)
-        .on('click', function (e) {
-          var id = $(this).data('id');
-          ccfp.setupEditForm(id);
-        })
-        .append("a")
-        .attr("href", "#")
-        .text("edit");
+			if (ccfp.isAdmin()) {
+			  // only fires if edit-link is already in the table
+			  // TODO fix this
+        tr.selectAll("td")
+          .select(function (d) {
+            if (d[2] == "edit-link") {
+              return this;
+            }
+            return null;
+          })
+          .on('click', function (e) {
+            var id = $(this).data('id');
+            ccfp.setupEditForm(id);
+          })
+          .attr("data-target", null).attr("data-toggle", null)
+          .append("a").attr("href", "#").text("edit");
+
+        tr.selectAll("td")
+					.select(function (d) {
+						if (d[2] == "delete-link") {
+              return this;
+						}
+						return null;
+					})
+          .on('click', function (e) {
+            var id = $(this).data('id');
+						console.log("clicked delete", id);
+						ccfp.confirmDeleteAbstract(id);
+          })
+          .attr("data-target", null).attr("data-toggle", null)
+          .append("a").attr("href", "#").text("delete");
+			}
 
 			// remove the loading animation
 			d3.select("#loading-animation").remove();
@@ -298,6 +309,11 @@ ccfp.renderOverview = function () {
       alert("renderOverview XHR failed: please email info@planetcassandra.org: " + status);
       console.log("XHR failed: " + status);
     });
+};
+
+ccfp.refreshOverview = function () {
+  ccfp.deleteOverview();
+  ccfp.renderOverview();
 };
 
 ccfp.deleteOverview = function () {
@@ -618,6 +634,55 @@ ccfp.setupEditForm = function (id) {
       alert("XHR failed: please email info@planetcassandra.org");
       console.log("XHR fetch for abstract form failed.", data, status, xhr);
     });
+};
+
+// build a delete modal popup to confirm deletes
+// currently rebuilds the modal every time rather than
+// reusing one with parameters
+ccfp.confirmDeleteAbstract = function (id) {
+  var parent_div = d3.select("#index-body");
+	parent_div.select("#delete-modal").remove();
+
+	var modal = parent_div.append("div")
+		.attr("id", "delete-modal")
+		.classed({"modal": true, "fade": true})
+	  .append("div").classed("modal-dialog", true)
+	    .append("div").classed("modal-content", true);
+
+	var header = modal.append("div").classed("modal-header", true)
+	header.append("button")
+    .attr("type", "button")
+		.attr("data-dismiss", "modal")
+		.classed("close", "true")
+		.attr("aria-label", "Close")
+		.append("span")
+		  .attr("aria-hidden", "true")
+			.html("&times;");
+	header.append("h4")
+		.classed("modal-title", true)
+		.text("Delete Abstract " + id + "?");
+
+	var footer = modal.append("div").classed("modal-footer", true);
+	footer.append("button")
+		.classed({"btn": true, "btn-default": true})
+	  .attr("data-dismiss", "modal")
+		.text("Cancel");
+
+	footer.append("button")
+		.classed({"btn": true, "btn-danger": true})
+		.text("DELETE")
+		.on("click", function () {
+			console.log("Deleting ID: ", id);
+  		$.ajax({ url: "/abstracts/" + id, type: "DELETE", dataType: "json" });
+			// TODO: handle errors?
+
+			$("#delete-modal").modal("toggle");
+			parent_div.select("#delete-modal").remove();
+			ccfp.refreshOverview();
+		});
+
+	// finally, toggle it to be visible
+	$("#delete-modal").modal("toggle");
 };
 
 // for now, only support a single author field even though the

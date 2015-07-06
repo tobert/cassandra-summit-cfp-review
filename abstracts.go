@@ -113,7 +113,7 @@ FROM abstracts`).Iter()
 	return alist, nil
 }
 
-func GetAbstract(cass *gocql.Session, id gocql.UUID) (a Abstract, err error) {
+func FetchAbstract(cass *gocql.Session, id gocql.UUID) (a Abstract, err error) {
 	q := cass.Query(`
 SELECT id, title, body, created, authors,
        company, jobtitle, picture_link, bio, audience,
@@ -129,6 +129,10 @@ FROM abstracts WHERE id=?`, id)
 	)
 
 	return a, err
+}
+
+func DeleteAbstract(cass *gocql.Session, id gocql.UUID) (err error) {
+	return cass.Query(`DELETE FROM abstracts WHERE id=?`, &id).Exec()
 }
 
 // Create a new abstract record in the DB.

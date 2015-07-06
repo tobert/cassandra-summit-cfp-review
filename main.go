@@ -64,12 +64,15 @@ func main() {
 	r.HandleFunc("/", RootHandler)
 	r.HandleFunc("/index.html", RootHandler)
 	r.HandleFunc("/abstracts/", AbstractsHandler)
-	r.HandleFunc("/abstracts/{id:[-a-f0-9]+}", AbstractHandler)
 	r.HandleFunc("/comments/", CommentsHandler)
 	r.HandleFunc("/comments/{abstract_id:[-a-f0-9]+}", CommentsHandler)
 	r.HandleFunc("/updatescores", ScoreUpdateHandler)
 	r.HandleFunc("/login", LoginHandler)
 	r.HandleFunc("/logout", LogoutHandler)
+
+	abstracts := r.PathPrefix("/abstracts/{id:[-a-f0-9]+}").Subrouter()
+	abstracts.Methods("GET").HandlerFunc(GetAbstractHandler)
+	abstracts.Methods("DELETE").HandlerFunc(DeleteAbstractHandler)
 
 	fs := http.FileServer(http.Dir("./public/"))
 	r.PathPrefix("/js").Handler(fs)

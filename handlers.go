@@ -91,7 +91,7 @@ func AbstractsHandler(w http.ResponseWriter, r *http.Request) {
 	jsonOut(w, r, a)
 }
 
-func AbstractHandler(w http.ResponseWriter, r *http.Request) {
+func GetAbstractHandler(w http.ResponseWriter, r *http.Request) {
 	if !checkAuth(w, r) {
 		return
 	}
@@ -102,8 +102,26 @@ func AbstractHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("could not parse uuid: '%s'", err), 500)
 		return
 	}
-	a, _ := GetAbstract(cass, id)
+	a, _ := FetchAbstract(cass, id)
 	jsonOut(w, r, a)
+}
+
+func DeleteAbstractHandler(w http.ResponseWriter, r *http.Request) {
+	if !checkAuth(w, r) {
+		return
+	}
+
+	vars := mux.Vars(r)
+	id, err := gocql.ParseUUID(vars["id"])
+	if err != nil {
+		http.Error(w, fmt.Sprintf("could not parse uuid: '%s'", err), 500)
+		return
+	}
+
+	err = DeleteAbstract(cass, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func ScoreUpdateHandler(w http.ResponseWriter, r *http.Request) {
