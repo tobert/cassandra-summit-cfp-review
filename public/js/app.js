@@ -212,7 +212,7 @@ ccfp.renderOverview = function () {
 				.attr("type", "button")
 				.attr("id", "overview-refresh-button")
 				.classed({"btn": true, "btn-default": true, "btn-xs": true})
-				.on("click", ccfp.refreshOverview());
+				.on("click", ccfp.refreshOverview);
 
 			refresh.append("span")
 				.classed({"glyphicon": true, "glyphicon-refresh": true})
