@@ -57,7 +57,7 @@ ccfp.admin_fields = [
 ];
 
 ccfp.csv_fields = [
-  "names", "emails", "title", "company", "reviews",
+  "id", "names", "emails", "title", "body", "company", "reviews",
   "scores_a-count", "scores_a-yes", "scores_a-maybe", "scores_a-no",
   "jobtitle", "picture_link", "bio", "audience"
 ];
@@ -754,8 +754,12 @@ ccfp.isAdmin = function () {
 ccfp.run = function () {
   $.ajax({ url: '/admins/', dataType: "json" })
     .done(function (data, status, xhr) {
-			ccfp.admins = data;
-		})
+      ccfp.admins = data;
+
+      if (ccfp.isAdmin()) {
+        ccfp.enableAdminLinks();
+      }
+    })
     .fail(function (xhr, status, err) {
       alert("/admins/ XHR failed: please email info@planetcassandra.org");
       console.log("XHR failed: " + status);
@@ -795,12 +799,6 @@ ccfp.run = function () {
       submitHandler: ccfp.saveAbstractForm
     });
   });
-
-  // dirty hack, insecure, but whatever people can get this data anyways
-  // something to fix before EU ...
-  if (ccfp.isAdmin()) {
-    ccfp.enableAdminLinks();
-  }
 
   jQuery.validator.setDefaults({
     debug: true,
