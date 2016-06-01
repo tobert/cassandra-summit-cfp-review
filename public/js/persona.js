@@ -72,7 +72,7 @@ $( document ).ready(function() {
 
   $('#login').on('click', function (e) {
     navigator.id.request({
-      siteName: 'Cassandra Summit 2015 CFP Review',
+      siteName: 'Cassandra Summit 2016 CFP Review',
       returnTo: '/',
       oncancel: function() { alert('user refuses to share identity.'); }
     });
