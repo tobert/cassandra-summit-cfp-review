@@ -57,9 +57,9 @@ ccfp.admin_fields = [
 ];
 
 ccfp.csv_fields = [
-  "id", "names", "emails", "title", "body", "company", "reviews",
+  "id", "upstream_id", "names", "emails", "title", "body", "company", "reviews",
   "scores_a-count", "scores_a-yes", "scores_a-maybe", "scores_a-no",
-  "jobtitle", "picture_link", "bio", "audience"
+  "jobtitle", "bio", "tracks"
 ];
 
 // TODO: figure out what this was supposed to do.
@@ -109,7 +109,7 @@ ccfp.computeStats = function (data) {
       curr[f] = a[f];
     });
     // possibly not available
-		["company", "jobtitle", "picture_link", "bio", "audience"].forEach(function (key) {
+		["company", "jobtitle", "bio", "tracks"].forEach(function (key) {
     	curr[key] = a[key] || "N/A";
 		});
 
@@ -382,9 +382,7 @@ ccfp.createScoringModals = function (data) {
     mkrow("Author(s)", authors["names"]);
     mkrow("Company", a["company"]);
     mkrow("Job Title", a["jobtitle"]);
-    mkrow("Picture Link",
-      '<a href="' + a["picture_link"] + '">' + a["picture_link"] + "</a>");
-    mkrow("Intended Audience", a["audience"]);
+    mkrow("Tracks", a["tracks"]);
 
     mkrow("Author Bio", "");
     b.append("div").classed("row", true)
@@ -618,7 +616,7 @@ ccfp.setupEditForm = function (id) {
       $("#author0").val(authors.join(", "));
       $("#email0").val(emails.join(", "));
 
-      ["company", "jobtitle", "bio", "picture_link", "audience"].forEach(function (key) {
+      ["company", "jobtitle", "bio", "tracks"].forEach(function (key) {
           $("#" + key).val(data[key]);
       });
 
@@ -688,8 +686,7 @@ ccfp.saveAbstractForm = function () {
     "company": $("#company").val(),
     "jobtitle": $("#jobtitle").val(),
     "bio": $("#bio").val(),
-    "picture_link": $("#picture_link").val(),
-    "audience": $("#audience").val(),
+    "tracks": $("#tracks").val(),
     "title": $("#title").val(),
     "body": $("#body").val()
   };
