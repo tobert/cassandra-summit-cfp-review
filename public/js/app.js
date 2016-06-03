@@ -105,7 +105,7 @@ ccfp.computeStats = function (data) {
 
     // copy over most fields as-is
 		// required fields
-    ["id", "title", "body"].forEach(function (f) {
+    ["id", "upstream_id", "title", "body"].forEach(function (f) {
       curr[f] = a[f];
     });
     // possibly not available
