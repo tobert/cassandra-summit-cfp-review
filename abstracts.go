@@ -33,16 +33,16 @@ type Authors map[Email]string
 type Scores map[Email]Score
 
 type Abstract struct {
-	Id          gocql.UUID `json:"id"`
-	UpstreamId  int        `json:"upstream_id"`
-	Title       string     `json:"title"`
-	Body        string     `json:"body"`
-	Created     time.Time  `json:"created"`
-	Authors     Authors    `json:"authors"`
-	Company     string     `json:"company"`
-	JobTitle    string     `json:"jobtitle"`
-	Bio         string     `json:"bio"`
-	Tracks      string     `json:"tracks"`
+	Id         gocql.UUID `json:"id"`
+	UpstreamId int        `json:"upstream_id"`
+	Title      string     `json:"title"`
+	Body       string     `json:"body"`
+	Created    time.Time  `json:"created"`
+	Authors    Authors    `json:"authors"`
+	Company    string     `json:"company"`
+	JobTitle   string     `json:"jobtitle"`
+	Bio        string     `json:"bio"`
+	Tracks     string     `json:"tracks"`
 
 	// 7 slots for scoring, I don't know what these mean and there's
 	// no point to encoding that meaning here so the 7 note scale it is
