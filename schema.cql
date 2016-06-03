@@ -4,15 +4,15 @@ use ccfp;
 
 CREATE TABLE abstracts (
     id           uuid,
+    upstream_id  int,
 	title        text,
     body         text,
     created      timestamp,
     authors      map<text,text>,
 	company      text,
 	jobtitle     text,
-	picture_link text,
 	bio          text,
-	audience     text,
+	tracks       text,
 	scores_a     map<text,float>,
 	scores_b     map<text,float>,
 	scores_c     map<text,float>,

@@ -34,15 +34,15 @@ type Scores map[Email]Score
 
 type Abstract struct {
 	Id          gocql.UUID `json:"id"`
+	UpstreamId  int        `json:"upstream_id"`
 	Title       string     `json:"title"`
 	Body        string     `json:"body"`
 	Created     time.Time  `json:"created"`
 	Authors     Authors    `json:"authors"`
 	Company     string     `json:"company"`
 	JobTitle    string     `json:"jobtitle"`
-	PictureLink string     `json:"picture_link"`
 	Bio         string     `json:"bio"`
-	Audience    string     `json:"audience"`
+	Tracks      string     `json:"tracks"`
 
 	// 7 slots for scoring, I don't know what these mean and there's
 	// no point to encoding that meaning here so the 7 note scale it is
@@ -84,8 +84,8 @@ func ListAbstracts(cass *gocql.Session) (Abstracts, error) {
 	alist := make(Abstracts, 0)
 
 	iq := cass.Query(`
-SELECT id, title, body, created, authors,
-       company, jobtitle, picture_link, bio, audience,
+SELECT id, upstream_id, title, body, created, authors,
+       company, jobtitle, bio, tracks,
        scores_a, scores_b, scores_c, scores_d,
 	   scores_e, scores_f, scores_g, scores_names
 FROM abstracts`).Iter()
@@ -94,8 +94,8 @@ FROM abstracts`).Iter()
 		a := Abstract{}
 
 		ok := iq.Scan(
-			&a.Id, &a.Title, &a.Body, &a.Created, &a.Authors,
-			&a.Company, &a.JobTitle, &a.PictureLink, &a.Bio, &a.Audience,
+			&a.Id, &a.UpstreamId, &a.Title, &a.Body, &a.Created, &a.Authors,
+			&a.Company, &a.JobTitle, &a.Bio, &a.Tracks,
 			&a.ScoresA, &a.ScoresB, &a.ScoresC, &a.ScoresD,
 			&a.ScoresE, &a.ScoresF, &a.ScoresG, &a.ScoresNames,
 		)
@@ -115,15 +115,15 @@ FROM abstracts`).Iter()
 
 func FetchAbstract(cass *gocql.Session, id gocql.UUID) (a Abstract, err error) {
 	q := cass.Query(`
-SELECT id, title, body, created, authors,
-       company, jobtitle, picture_link, bio, audience,
+SELECT id, upstream_id, title, body, created, authors,
+       company, jobtitle, bio, tracks,
        scores_a, scores_b, scores_c, scores_d,
 	   scores_e, scores_f, scores_g, scores_names
 FROM abstracts WHERE id=?`, id)
 
 	err = q.Scan(
-		&a.Id, &a.Title, &a.Body, &a.Created, &a.Authors,
-		&a.Company, &a.JobTitle, &a.PictureLink, &a.Bio, &a.Audience,
+		&a.Id, &a.UpstreamId, &a.Title, &a.Body, &a.Created, &a.Authors,
+		&a.Company, &a.JobTitle, &a.Bio, &a.Tracks,
 		&a.ScoresA, &a.ScoresB, &a.ScoresC, &a.ScoresD,
 		&a.ScoresE, &a.ScoresF, &a.ScoresG, &a.ScoresNames,
 	)
@@ -141,14 +141,15 @@ func DeleteAbstract(cass *gocql.Session, id gocql.UUID) (err error) {
 func (a *Abstract) Save(cass *gocql.Session) error {
 	return cass.Query(`
 INSERT INTO abstracts (
-       id, title, body, created, authors,
-       company, jobtitle, picture_link, bio, audience
+       id, upstream_id, title, body, created, authors,
+       company, jobtitle, bio, tracks
 	)
 VALUES
-    (?, ?, ?, ?, ?,
-     ?, ?, ?, ?, ?)`,
-		&a.Id, &a.Title, &a.Body, &a.Created, &a.Authors,
-		&a.Company, &a.JobTitle, &a.PictureLink, &a.Bio, &a.Audience,
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		&a.Id, &a.UpstreamId, &a.Title,
+		&a.Body, &a.Created, &a.Authors,
+		&a.Company, &a.JobTitle, &a.Bio,
+		&a.Tracks,
 	).Exec()
 }
 
